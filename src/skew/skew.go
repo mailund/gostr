@@ -1,0 +1,190 @@
+/*
+ Straightforward implementation of the skew/DC3 algorithm
+
+- https://www.cs.helsinki.fi/u/tpkarkka/publications/jacm05-revised.pdf
+*/
+
+package skew
+
+func safe_idx(x []int, i int) int {
+	if i >= len(x) {
+		return 0
+	} else {
+		return x[i]
+	}
+}
+
+func symbcount(x []int, idx []int, offset int, asize int) []int {
+	counts := make([]int, asize)
+	for _, i := range idx {
+		counts[safe_idx(x, i+offset)]++
+	}
+	return counts
+}
+
+func cumsum(counts []int) []int {
+	res := make([]int, len(counts))
+	acc := 0
+	for i, k := range counts {
+		res[i] = acc
+		acc += k
+	}
+	return res
+}
+
+func bucketSort(x []int, asize int, idx []int, offset int) []int {
+	counts := symbcount(x, idx, offset, asize)
+	buckets := cumsum(counts)
+	out := make([]int, len(idx))
+	for _, i := range idx {
+		bucket := safe_idx(x, i+offset)
+		out[buckets[bucket]] = i
+		buckets[bucket]++
+	}
+	return out
+}
+
+func radix3(x []int, asize int, idx []int) []int {
+	idx = bucketSort(x, asize, idx, 2)
+	idx = bucketSort(x, asize, idx, 1)
+	return bucketSort(x, asize, idx, 0)
+}
+
+func getSA12(x []int) []int {
+	SA12 := []int{}
+	for i := 0; i < len(x); i++ {
+		if i%3 != 0 {
+			SA12 = append(SA12, i)
+		}
+	}
+	return SA12
+}
+
+func getSA3(SA12 []int) []int {
+	SA3 := []int{}
+	for _, i := range SA12 {
+		if i%3 == 1 {
+			SA3 = append(SA3, i-1)
+		}
+	}
+	return SA3
+}
+
+type triplet = [3]int
+type tripletMap = map[triplet]int
+
+func trip(x []int, i int) triplet {
+	return triplet{safe_idx(x, i), safe_idx(x, i+1), safe_idx(x, i+2)}
+}
+
+func collectAlphabet(x []int, idx []int) tripletMap {
+	alpha := tripletMap{}
+	for _, i := range idx {
+		t := trip(x, i)
+		if _, ok := alpha[t]; !ok {
+			alpha[t] = len(alpha) + 2
+		}
+	}
+	return alpha
+}
+
+func less(x []int, i int, j int, ISA map[int]int) bool {
+	a, b := safe_idx(x, i), safe_idx(x, j)
+	if a < b {
+		return true
+	}
+	if a > b {
+		return false
+	}
+	if i%3 != 0 && j%3 != 0 {
+		return ISA[i] < ISA[j]
+	}
+	return less(x, i+1, j+1, ISA)
+}
+
+func merge(x []int, SA12 []int, SA3 []int) []int {
+	ISA := map[int]int{}
+	for i := 0; i < len(SA12); i++ {
+		ISA[SA12[i]] = i
+	}
+	SA := []int{}
+	i, j := 0, 0
+	for i < len(SA12) && j < len(SA3) {
+		if less(x, SA12[i], SA3[j], ISA) {
+			SA = append(SA, SA12[i])
+			i++
+		} else {
+			SA = append(SA, SA3[j])
+			j++
+		}
+	}
+	SA = append(SA, SA12[i:]...)
+	SA = append(SA, SA3[j:]...)
+	return SA
+}
+
+func buildU(x []int, alpha tripletMap) []int {
+	u := []int{}
+	for i := 0; i < len(x); i++ {
+		if i%3 == 1 {
+			u = append(u, alpha[trip(x, i)])
+		}
+	}
+	u = append(u, 1)
+	for i := 0; i < len(x); i++ {
+		if i%3 == 2 {
+			u = append(u, alpha[trip(x, i)])
+		}
+	}
+	return u
+}
+
+func uidx(i int, m int) int {
+	k := 0
+	if i < m {
+		k = 2 * i
+	} else {
+		k = 2*(i-m) - 1
+	}
+	return k + k/2 + 1
+}
+
+func skew(x []int, asize int) []int {
+	SA12 := radix3(x, asize, getSA12(x))
+	alpha := collectAlphabet(x, SA12)
+	if len(alpha) < len(SA12) {
+		// Build u and its SA.
+		u := buildU(x, alpha)
+		usa := skew(u, len(alpha)+2) // +2 for sentinels
+		// Then map back to SA12 indices
+		m := len(usa) / 2
+		SA12 = []int{}
+		for _, i := range usa {
+			if i != m {
+				SA12 = append(SA12, uidx(i, m))
+			}
+		}
+	}
+	SA3 := bucketSort(x, asize, getSA3(SA12), 0)
+	return merge(x, SA12, SA3)
+}
+
+func str2int(x string) []int {
+	i := []int{}
+	for _, c := range x {
+		i = append(i, int(c))
+	}
+	return i
+}
+
+func Skew(x string) []int {
+	/*
+			Skew algorithm for a string."
+		    The skew() function wants a list of integers,
+		    so we convert the string in the first call.
+		    I am assuming that the alphabet size is 256 here, although
+		    of course it might not be. It is a simplification instead of
+		    remapping the string.
+	*/
+	return skew(str2int(x), 256)
+}
