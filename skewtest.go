@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"skew"
+	"gostr"
 )
 
 func main() {
 	x := "mississippi"
-	sa := skew.Skew(x)
+	sa := gostr.Skew(x)
 	for _, i := range sa {
 		fmt.Printf("%d %s\n", i, x[i:])
 	}

@@ -4,7 +4,7 @@
 - https://www.cs.helsinki.fi/u/tpkarkka/publications/jacm05-revised.pdf
 */
 
-package skew
+package gostr
 
 func safe_idx(x []int, i int) int {
 	if i >= len(x) {
@@ -51,20 +51,50 @@ func radix3(x []int, asize int, idx []int) []int {
 }
 
 func getSA12(x []int) []int {
-	SA12 := []int{}
-	for i := 0; i < len(x); i++ {
+	/*
+		You can append to the slice here:
+		SA12 := []int{}
+		for i := 0; i < len(x); i++ {
+			if i%3 != 0 {
+				SA12 = append(SA12, i)
+			}
+		}
+		but that allocates extra space for the capacity
+		so preallocating is better.
+	*/
+	SA12 := make([]int, len(x)-((len(x)-1)/3+1))
+	for i, j := 0, 0; i < len(x); i++ {
 		if i%3 != 0 {
-			SA12 = append(SA12, i)
+			SA12[j] = i
+			j++
 		}
 	}
 	return SA12
 }
 
-func getSA3(SA12 []int) []int {
+func getSA3(x, SA12 []int) []int {
+	/*You can append to the slice here:
 	SA3 := []int{}
+	if len(x)%3 == 1 {
+		SA3 = append(SA3, len(x)-1)
+	}
 	for _, i := range SA12 {
 		if i%3 == 1 {
 			SA3 = append(SA3, i-1)
+		}
+	}
+	but preallocating is better
+	*/
+	SA3 := make([]int, (len(x)-1)/3+1)
+	k := 0
+	if len(x)%3 == 1 {
+		SA3[k] = len(x) - 1
+		k++
+	}
+	for _, i := range SA12 {
+		if i%3 == 1 {
+			SA3[k] = i - 1
+			k++
 		}
 	}
 	return SA3
@@ -107,35 +137,84 @@ func merge(x []int, SA12 []int, SA3 []int) []int {
 	for i := 0; i < len(SA12); i++ {
 		ISA[SA12[i]] = i
 	}
-	SA := []int{}
-	i, j := 0, 0
+	/*
+		Using append:
+			SA := []int{}
+			i, j := 0, 0
+			for i < len(SA12) && j < len(SA3) {
+				if less(x, SA12[i], SA3[j], ISA) {
+					SA = append(SA, SA12[i])
+					i++
+				} else {
+					SA = append(SA, SA3[j])
+					j++
+				}
+			}
+			SA = append(SA, SA12[i:]...)
+			SA = append(SA, SA3[j:]...)
+	*/
+	SA := make([]int, len(SA12)+len(SA3))
+	i, j, k := 0, 0, 0
 	for i < len(SA12) && j < len(SA3) {
 		if less(x, SA12[i], SA3[j], ISA) {
-			SA = append(SA, SA12[i])
+			SA[k] = SA12[i]
 			i++
+			k++
 		} else {
-			SA = append(SA, SA3[j])
+			SA[k] = SA3[j]
 			j++
+			k++
 		}
 	}
-	SA = append(SA, SA12[i:]...)
-	SA = append(SA, SA3[j:]...)
+	for ; i < len(SA12); i++ {
+		SA[k] = SA12[i]
+		i++
+		k++
+	}
+	for ; j < len(SA3); j++ {
+		SA[k] = SA3[j]
+		j++
+		k++
+	}
 	return SA
 }
 
 func buildU(x []int, alpha tripletMap) []int {
-	u := []int{}
+	/*
+		With append:
+			u := []int{}
+			for i := 0; i < len(x); i++ {
+				if i%3 == 1 {
+					u = append(u, alpha[trip(x, i)])
+				}
+			}
+			u = append(u, 1)
+			for i := 0; i < len(x); i++ {
+				if i%3 == 2 {
+					u = append(u, alpha[trip(x, i)])
+				}
+			}
+	*/
+	// The length is len(SA12) which is len(x)-(len(x)/3 + 1)
+	// but then plus the central sentinel, so don't subtract the
+	// 1.
+	u := make([]int, len(x)-len(x)/3)
+	k := 0
 	for i := 0; i < len(x); i++ {
 		if i%3 == 1 {
-			u = append(u, alpha[trip(x, i)])
+			u[k] = alpha[trip(x, i)]
+			k++
 		}
 	}
-	u = append(u, 1)
+	u[k] = 1
+	k++
 	for i := 0; i < len(x); i++ {
 		if i%3 == 2 {
-			u = append(u, alpha[trip(x, i)])
+			u[k] = alpha[trip(x, i)]
+			k++
 		}
 	}
+
 	return u
 }
 
@@ -150,6 +229,15 @@ func uidx(i int, m int) int {
 }
 
 func skew(x []int, asize int) []int {
+	// Some of the length calculations assume that x isn't
+	// empty, so handle that explicitly. If we append to slices
+	// instead of pre-allocating, we don't need it, but it
+	// will still save some time to handle this case as soon
+	// as possible.
+	if len(x) == 0 {
+		return []int{}
+	}
+
 	SA12 := radix3(x, asize, getSA12(x))
 	alpha := collectAlphabet(x, SA12)
 	if len(alpha) < len(SA12) {
@@ -158,33 +246,34 @@ func skew(x []int, asize int) []int {
 		usa := skew(u, len(alpha)+2) // +2 for sentinels
 		// Then map back to SA12 indices
 		m := len(usa) / 2
-		SA12 = []int{}
+		k := 0
 		for _, i := range usa {
 			if i != m {
-				SA12 = append(SA12, uidx(i, m))
+				SA12[k] = uidx(i, m)
+				k++
 			}
 		}
 	}
-	SA3 := bucketSort(x, asize, getSA3(SA12), 0)
+	SA3 := bucketSort(x, asize, getSA3(x, SA12), 0)
 	return merge(x, SA12, SA3)
 }
 
 func str2int(x string) []int {
-	i := []int{}
-	for _, c := range x {
-		i = append(i, int(c))
+	out := make([]int, len(x))
+	for i, c := range x {
+		out[i] = int(c)
 	}
-	return i
+	return out
 }
 
 func Skew(x string) []int {
 	/*
-			Skew algorithm for a string."
-		    The skew() function wants a list of integers,
-		    so we convert the string in the first call.
-		    I am assuming that the alphabet size is 256 here, although
-		    of course it might not be. It is a simplification instead of
-		    remapping the string.
+		Skew algorithm for a string."
+		The skew() function wants a list of integers,
+		so we convert the string in the first call.
+		I am assuming that the alphabet size is 256 here, although
+		of course it might not be. It is a simplification instead of
+		remapping the string.
 	*/
 	return skew(str2int(x), 256)
 }
