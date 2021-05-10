@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	x := "mis"
+	x := "mississippi"
 	sa := gostr.Skew(x)
 	fmt.Println(sa)
 	for _, i := range sa {
@@ -16,7 +16,7 @@ func main() {
 
 	ctab := gostr.Ctab(x)
 	otab := gostr.Otab(x, sa, ctab)
-	L, R := gostr.BwtSearch(x, "mis", ctab, otab)
+	L, R := gostr.BwtSearch(x, "is", ctab, otab)
 	fmt.Println("Hits:", L, R)
 	for i := L; i < R; i++ {
 		fmt.Println(sa[i], x[sa[i]:])

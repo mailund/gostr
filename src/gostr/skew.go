@@ -200,19 +200,15 @@ func buildU(x []int, alpha tripletMap) []int {
 	// 1.
 	u := make([]int, len(x)-len(x)/3)
 	k := 0
-	for i := 0; i < len(x); i++ {
-		if i%3 == 1 {
-			u[k] = alpha[trip(x, i)]
-			k++
-		}
+	for i := 1; i < len(x); i += 3 {
+		u[k] = alpha[trip(x, i)]
+		k++
 	}
 	u[k] = 1
 	k++
-	for i := 0; i < len(x); i++ {
-		if i%3 == 2 {
-			u[k] = alpha[trip(x, i)]
-			k++
-		}
+	for i := 2; i < len(x); i += 3 {
+		u[k] = alpha[trip(x, i)]
+		k++
 	}
 
 	return u
