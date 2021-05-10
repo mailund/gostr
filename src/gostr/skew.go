@@ -183,16 +183,12 @@ func buildU(x []int, alpha tripletMap) []int {
 	/*
 		With append:
 			u := []int{}
-			for i := 0; i < len(x); i++ {
-				if i%3 == 1 {
-					u = append(u, alpha[trip(x, i)])
-				}
+			for i := 1; i < len(x); i += 3 {
+				u = append(u, alpha[trip(x, i)])
 			}
 			u = append(u, 1)
-			for i := 0; i < len(x); i++ {
-				if i%3 == 2 {
-					u = append(u, alpha[trip(x, i)])
-				}
+			for i := 2; i < len(x); i += 3 {
+				u = append(u, alpha[trip(x, i)])
 			}
 	*/
 	// The length is len(SA12) which is len(x)-(len(x)/3 + 1)
@@ -215,13 +211,11 @@ func buildU(x []int, alpha tripletMap) []int {
 }
 
 func uidx(i int, m int) int {
-	k := 0
 	if i < m {
-		k = 2 * i
+		return 1 + 3*i
 	} else {
-		k = 2*(i-m) - 1
+		return 2 + 3*(i-m-1)
 	}
-	return k + k/2 + 1
 }
 
 func skew(x []int, asize int) []int {
