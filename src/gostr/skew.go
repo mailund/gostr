@@ -6,6 +6,8 @@
 
 package gostr
 
+import "fmt"
+
 func safe_idx(x []int, i int) int {
 	if i >= len(x) {
 		return 0
@@ -52,15 +54,15 @@ func radix3(x []int, asize int, idx []int) []int {
 
 func getSA12(x []int) []int {
 	/*
-		You can append to the slice here:
+			You can append to the slice here:
 		SA12 := []int{}
 		for i := 0; i < len(x); i++ {
 			if i%3 != 0 {
 				SA12 = append(SA12, i)
 			}
 		}
-		but that allocates extra space for the capacity
-		so preallocating is better.
+			but that allocates extra space for the capacity
+			so preallocating is better.
 	*/
 	SA12 := make([]int, len(x)-((len(x)-1)/3+1))
 	for i, j := 0, 0; i < len(x); i++ {
@@ -138,22 +140,24 @@ func merge(x []int, SA12 []int, SA3 []int) []int {
 		ISA[SA12[i]] = i
 	}
 	/*
-		Using append:
-			SA := []int{}
-			i, j := 0, 0
-			for i < len(SA12) && j < len(SA3) {
-				if less(x, SA12[i], SA3[j], ISA) {
-					SA = append(SA, SA12[i])
-					i++
-				} else {
-					SA = append(SA, SA3[j])
-					j++
-				}
-			}
-			SA = append(SA, SA12[i:]...)
-			SA = append(SA, SA3[j:]...)
-	*/
-	SA := make([]int, len(SA12)+len(SA3))
+		Using append: */
+	SA := []int{}
+	i, j := 0, 0
+	for i < len(SA12) && j < len(SA3) {
+		if less(x, SA12[i], SA3[j], ISA) {
+			SA = append(SA, SA12[i])
+			i++
+		} else {
+			SA = append(SA, SA3[j])
+			j++
+		}
+	}
+	SA = append(SA, SA12[i:]...)
+	SA = append(SA, SA3[j:]...)
+	/**/
+	fmt.Println(SA)
+
+	SA = make([]int, len(SA12)+len(SA3))
 	i, j, k := 0, 0, 0
 	for i < len(SA12) && j < len(SA3) {
 		if less(x, SA12[i], SA3[j], ISA) {
@@ -168,12 +172,10 @@ func merge(x []int, SA12 []int, SA3 []int) []int {
 	}
 	for ; i < len(SA12); i++ {
 		SA[k] = SA12[i]
-		i++
 		k++
 	}
 	for ; j < len(SA3); j++ {
 		SA[k] = SA3[j]
-		j++
 		k++
 	}
 	return SA
@@ -256,6 +258,7 @@ func str2int(x string) []int {
 	return out
 }
 
+// Skew builds the suffix array of a string using the skew algorithm.
 func Skew(x string) []int {
 	/*
 		Skew algorithm for a string."

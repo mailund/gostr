@@ -4,7 +4,11 @@ import (
 	"sort"
 )
 
-// If you want to know the BWT without making a new string.
+/*
+   BwtIdx gives you the ith letter in the Burrows-Wheeler transform
+   of a string. Use it if you want to know the BWT without making a
+   new string.
+*/
 func BwtIdx(x string, sa []int, i int) byte {
 	j := sa[i]
 	if j == 0 {
@@ -14,7 +18,8 @@ func BwtIdx(x string, sa []int, i int) byte {
 	}
 }
 
-// If you want BWT as a string
+// Bwt gives you the Burrows-Wheeler transform of a string,
+// computed using the suffix array for the string.
 func Bwt(x string, sa []int) string {
 	bwt := make([]byte, len(x))
 	for i := 0; i < len(sa); i++ {
@@ -23,21 +28,29 @@ func Bwt(x string, sa []int) string {
 	return string(bwt)
 }
 
+// CTAB Structor holding the C-table for BWT search.
+// This is a map from letters in the alphabet to the
+// cumulative sum of how often we see letters in the
+// BWT
 type CTAB struct {
 	cumsum map[byte]int
 	// Alpha The sorted bytes in the string.
 	Alpha []byte
 }
 
+// Contains Does the c-table contain a byte?
 func (ctab *CTAB) Contains(a byte) bool {
 	_, ok := ctab.cumsum[a]
 	return ok
 }
 
+// Rank How many times does the BWT hold a letter smaller
+// than a?
 func (ctab *CTAB) Rank(a byte) int {
 	return ctab.cumsum[a]
 }
 
+// Ctab builds the c-table from a string.
 func Ctab(x string) CTAB {
 	// First, count how often we see each character
 	counts := make(map[byte]int)
@@ -69,10 +82,13 @@ func Ctab(x string) CTAB {
 	return CTAB{cumsum, alpha}
 }
 
+// OTAB Holds the o-table (rank table) from a BWT string
 type OTAB struct {
 	table map[byte][]int
 }
 
+// Rank How many times do we see letter a before index i
+// in the BWT string?
 func (otab *OTAB) Rank(a byte, i int) int {
 	if i == 0 {
 		return 0
@@ -81,6 +97,9 @@ func (otab *OTAB) Rank(a byte, i int) int {
 	}
 }
 
+// Otab builds the o-table from a string. It uses
+// the suffix array to get the BWT and a c-table
+// to handle the alphabet.
 func Otab(x string, sa []int, ctab CTAB) OTAB {
 	bwt := Bwt(x, sa)
 
@@ -101,6 +120,8 @@ func Otab(x string, sa []int, ctab CTAB) OTAB {
 	return OTAB{table}
 }
 
+// BwtSearch finds all occurrences of p in x via a c-table
+// and an o-table.
 func BwtSearch(x, p string, ctab CTAB, otab OTAB) (int, int) {
 	L, R := 0, len(x)
 	for i := len(p) - 1; i >= 0; i-- {
