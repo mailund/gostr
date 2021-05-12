@@ -178,9 +178,6 @@ func NaiveST(x string) SuffixTree {
 	root := newInner(interval{0, 0})
 	for i := 0; i < len(x); i++ {
 		v, j, y := sscan(root, interval{i, len(x)}, x)
-		if j == y.length() {
-			panic("We can't have a perfect match in NaiveST!")
-		}
 		if j == 0 {
 			v.addChild(newLeaf(i, y), x)
 		} else {
