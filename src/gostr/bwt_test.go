@@ -34,4 +34,5 @@ func TestMississippiBWT(t *testing.T) {
 			t.Error("We have an incorrect match.")
 		}
 	}
+
 }

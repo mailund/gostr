@@ -6,8 +6,6 @@
 
 package gostr
 
-import "fmt"
-
 func safe_idx(x []int, i int) int {
 	if i >= len(x) {
 		return 0
@@ -140,24 +138,23 @@ func merge(x []int, SA12 []int, SA3 []int) []int {
 		ISA[SA12[i]] = i
 	}
 	/*
-		Using append: */
-	SA := []int{}
-	i, j := 0, 0
-	for i < len(SA12) && j < len(SA3) {
-		if less(x, SA12[i], SA3[j], ISA) {
-			SA = append(SA, SA12[i])
-			i++
-		} else {
-			SA = append(SA, SA3[j])
-			j++
+			Using append:
+		SA := []int{}
+		i, j := 0, 0
+		for i < len(SA12) && j < len(SA3) {
+			if less(x, SA12[i], SA3[j], ISA) {
+				SA = append(SA, SA12[i])
+				i++
+			} else {
+				SA = append(SA, SA3[j])
+				j++
+			}
 		}
-	}
-	SA = append(SA, SA12[i:]...)
-	SA = append(SA, SA3[j:]...)
-	/**/
-	fmt.Println(SA)
+		SA = append(SA, SA12[i:]...)
+		SA = append(SA, SA3[j:]...)
+	*/
 
-	SA = make([]int, len(SA12)+len(SA3))
+	SA := make([]int, len(SA12)+len(SA3))
 	i, j, k := 0, 0, 0
 	for i < len(SA12) && j < len(SA3) {
 		if less(x, SA12[i], SA3[j], ISA) {
