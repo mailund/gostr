@@ -3,6 +3,7 @@ package gostr
 import (
 	"fmt"
 	"io"
+	"strings"
 )
 
 type interval struct {
@@ -34,9 +35,10 @@ func (r interval) slice(i, j int) interval {
 
 type STNode struct {
 	interval
-	LeafIdx  int
-	Parent   *STNode
-	Children map[byte]*STNode
+	LeafIdx    int
+	Parent     *STNode
+	suffixLink *STNode
+	Children   map[byte]*STNode
 }
 
 func newInner(inter interval) *STNode {
@@ -69,13 +71,18 @@ func (n *STNode) addChild(child *STNode, x string) {
 	child.Parent = n
 }
 
+func replaceSentinel(x string) string {
+	// Need this one for dot output
+	return strings.ReplaceAll(x, "\x00", "†")
+}
+
 func (n *STNode) ToDot(x string, w io.Writer) {
 	if n.Parent == nil {
 		// Root
 		fmt.Fprintf(w, "\"%p\"[label=\"\", shape=circle, style=filled, fillcolor=grey]\n", n)
 	} else {
 		fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
-			n.Parent, n, n.EdgeLabel(x))
+			n.Parent, n, replaceSentinel(n.EdgeLabel(x)))
 		if n.IsSTLeaf() {
 			fmt.Fprintf(w, "\"%p\"[label=%d]\n", n, n.LeafIdx)
 		} else {
@@ -136,6 +143,22 @@ func sscan(n *STNode, inter interval, x string) (*STNode, int, interval) {
 	return sscan(v, inter.slice(i, -1), x)
 }
 
+func fscan(n *STNode, inter interval, x string) (*STNode, int, interval) {
+	if inter.length() == 0 {
+		return n, 0, inter
+	}
+	v, ok := n.Children[x[inter.i]]
+	if !ok {
+		panic("With fscan there should always be an out-edge")
+	}
+	i := min(v.interval.length(), inter.length())
+	if i == inter.length() {
+		return v, i, inter
+	}
+	// Continue from v (exploiting tail call optimisation)
+	return sscan(v, inter.slice(i, -1), x)
+}
+
 func breakEdge(n *STNode, depth, leafidx int, y interval, x string) *STNode {
 	if n.Parent == nil {
 		panic("A node must have a parent when we break its edge.")
@@ -151,7 +174,7 @@ func breakEdge(n *STNode, depth, leafidx int, y interval, x string) *STNode {
 
 func NaiveST(x string) SuffixTree {
 	// Add sentinel
-	x += "$"
+	x += "\x00"
 	root := newInner(interval{0, 0})
 	for i := 0; i < len(x); i++ {
 		v, j, y := sscan(root, interval{i, len(x)}, x)
@@ -162,6 +185,67 @@ func NaiveST(x string) SuffixTree {
 			v.addChild(newLeaf(i, y), x)
 		} else {
 			breakEdge(v, j, i, y.slice(j, -1), x)
+		}
+	}
+	return SuffixTree{x, root}
+}
+
+func (v *STNode) suffix() interval {
+	// If v's parent is the root, chop
+	// off one index
+	if v.Parent.Parent == nil {
+		return v.interval.slice(1, -1)
+	} else {
+		return v.interval
+	}
+}
+
+func McCreight(x string) SuffixTree {
+	x += "\x00"
+	root := newInner(interval{0, 0})
+	root.suffixLink = root
+	currLeaf := newLeaf(0, interval{0, len(x)})
+	root.addChild(currLeaf, x)
+
+	// The bits of the suffix we need to search for
+	var y, z interval
+	// ynode is the node we get to when searching for y
+	var ynode *STNode
+
+	for i := 1; i < len(x); i++ {
+		p := currLeaf.Parent
+
+		if p.suffixLink != nil {
+			// We don't need y here, just z and ynode
+			z = currLeaf.suffix()
+			ynode = p.suffixLink
+		} else {
+			pp := p.Parent
+			// this time we need to search in both y and z
+			y = p.suffix()
+			z = currLeaf.interval
+			ynode, depth, _ := fscan(pp.suffixLink, y, x)
+			if depth < ynode.interval.length() {
+				// ended on an edge
+				currLeaf = breakEdge(ynode, depth, i, z, x)
+				p.suffixLink = currLeaf.Parent
+				continue // Go to next suffix, we are done here
+			}
+
+			// Remember p's suffix link for later...
+			p.suffixLink = ynode
+		}
+
+		// This is the slow scan part, from ynode and the rest
+		// of the suffix, which is z.
+		n, depth, w := sscan(ynode, z, x)
+		if depth == 0 {
+			// Landed on a node
+			currLeaf = newLeaf(i, w)
+			n.addChild(currLeaf, x)
+		} else {
+			// Landed on an edge
+			currLeaf = breakEdge(n, depth, i, w.slice(depth, -1), x)
 		}
 	}
 	return SuffixTree{x, root}
