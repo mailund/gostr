@@ -40,11 +40,16 @@ type STNode struct {
 }
 
 func newInner(inter interval) *STNode {
-	return &STNode{inter, -1, nil, map[byte]*STNode{}}
+	return &STNode{
+		interval: inter,
+		LeafIdx:  -1,
+		Children: map[byte]*STNode{}}
 }
 
 func newLeaf(idx int, inter interval) *STNode {
-	return &STNode{inter, idx, nil, map[byte]*STNode{}}
+	return &STNode{
+		interval: inter,
+		LeafIdx:  idx}
 }
 
 func (n *STNode) IsSTInner() bool {
@@ -105,8 +110,7 @@ func min(vars ...int) int {
 	return m
 }
 
-// This shouldn't be suffix tree specific either...
-func firstMismatch(i1, i2 interval, x string) int {
+func lenSharedPrefix(i1, i2 interval, x string) int {
 	i, n := 0, min(i1.length(), i2.length())
 	for ; i < n; i++ {
 		if x[i1.i+i] != x[i2.i+i] {
@@ -124,7 +128,7 @@ func sscan(n *STNode, inter interval, x string) (*STNode, int, interval) {
 	if !ok {
 		return n, 0, inter
 	}
-	i := firstMismatch(v.interval, inter, x)
+	i := lenSharedPrefix(v.interval, inter, x)
 	if i == inter.length() || i < v.interval.length() {
 		return v, i, inter
 	}
