@@ -1,14 +1,55 @@
 package gostr
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"testing"
 )
 
+func testSuffixTree(
+	construction func(string) SuffixTree,
+	x string,
+	t *testing.T) *SuffixTree {
+	st := construction(x)
+
+	return &st
+}
+
+func testSearchMatch(
+	st *SuffixTree,
+	p string,
+	t *testing.T) {
+	for i := range st.Search(p) {
+		if st.String[i:i+len(p)] != p {
+			t.Errorf("While searching for %s I found %s.",
+				p, ReplaceSentinel(st.String[i:]))
+		}
+	}
+}
+
+func testSearchMismatch(
+	st *SuffixTree,
+	p string,
+	t *testing.T) {
+	res := st.Search(p)
+	if _, ok := <-res; ok {
+		t.Errorf("We shouldn't find '%s' in '%s.'", p, ReplaceSentinel(st.String))
+	}
+}
+
+func testSearchMississippi(
+	st *SuffixTree,
+	t *testing.T) {
+	testSearchMatch(st, "ssi", t)
+	testSearchMismatch(st, "x", t)
+	testSearchMismatch(st, "spi", t)
+}
+
 func TestNaiveConstruction(t *testing.T) {
-	st := NaiveST("mississippi")
+	x := "mississippi"
+	st := testSuffixTree(NaiveST, x, t)
+
+	testSearchMississippi(st, t)
 
 	f, err := os.Create("naive-dot.dot")
 	if err != nil {
@@ -16,15 +57,13 @@ func TestNaiveConstruction(t *testing.T) {
 	}
 	st.ToDot(f)
 	f.Close()
-
-	labels := st.Root.LeafLabels()
-	for _, i := range labels {
-		fmt.Println(i)
-	}
 }
 
 func TestMcCreightConstruction(t *testing.T) {
-	st := McCreight("mississippi")
+	x := "mississippi"
+	st := testSuffixTree(McCreight, x, t)
+
+	testSearchMississippi(st, t)
 
 	f, err := os.Create("mccreight-dot.dot")
 	if err != nil {
@@ -32,12 +71,4 @@ func TestMcCreightConstruction(t *testing.T) {
 	}
 	st.ToDot(f)
 	f.Close()
-
-	labels := st.Root.LeafLabels()
-	for _, i := range labels {
-		fmt.Println(i)
-	}
-
-	fmt.Println("Everything went fine! Don't worry.")
-	t.Error("testing")
 }
