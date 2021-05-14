@@ -1,6 +1,7 @@
 package gostr
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"testing"
@@ -11,6 +12,29 @@ func testSuffixTree(
 	x string,
 	t *testing.T) *SuffixTree {
 	st := construction(x)
+
+	for i := range st.Root.LeafLabels() {
+		fmt.Println(i)
+	}
+
+	leaves := st.Root.LeafLabels()
+	noLeaves := 0
+	prev, ok := <-leaves
+	if ok {
+		noLeaves++
+		for i := range leaves {
+			if st.String[prev:] >= st.String[i:] {
+				t.Errorf("We got the leaf %s before leaf %s.",
+					ReplaceSentinel(st.String[prev:]), ReplaceSentinel(st.String[i:]))
+			}
+			noLeaves++
+			prev = i
+		}
+	}
+	if noLeaves != len(st.String) {
+		t.Errorf("We didn't get all the leaves, we got %d but expected %d.\n",
+			noLeaves, len(st.String))
+	}
 
 	return &st
 }
@@ -57,6 +81,7 @@ func TestNaiveConstruction(t *testing.T) {
 	}
 	st.ToDot(f)
 	f.Close()
+
 }
 
 func TestMcCreightConstruction(t *testing.T) {

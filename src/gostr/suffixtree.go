@@ -3,6 +3,7 @@ package gostr
 import (
 	"fmt"
 	"io"
+	"sort"
 	"strings"
 )
 
@@ -34,12 +35,30 @@ type Node interface {
 	getInterval() interval
 	chumpInterval(int)
 	setParent(parent Node)
+	leafLabels(chan<- int)
 
-	// Public interface
+	// -- Public interface -----
+	// IsLeaf is false for inner nodes and true for leaves.
+	IsLeaf() bool
+	// Parent gets the parent of a node.
 	Parent() Node
+	// Children gives you a channel to iterate through a node's children.
+	Children() <-chan Node
+	// EdgeLabel extracts the substring of x corresponding to the edge interval.
 	EdgeLabel(x string) string
+	// LeafLabels gets the indices for all labels in the subtree of a node.
+	LeafLabels() <-chan int
+	// ToDot writes the subtree in a node to a writer, getting the string from x.
 	ToDot(x string, w io.Writer)
-	LeafLabels() <-chan int // FIXME: efficiency?
+}
+
+func leafLabelsIterator(n Node) <-chan int {
+	outres := make(chan int)
+	go func() {
+		n.leafLabels(outres)
+		close(outres)
+	}()
+	return outres
 }
 
 // Data both in inner nodes and in leaf-nodes
@@ -70,8 +89,9 @@ func (n *sharedNode) EdgeLabel(x string) string {
 
 type innerNode struct {
 	sharedNode
-	suffixLink Node
-	children   map[byte]Node
+	suffixLink  Node
+	children    map[byte]Node
+	sortedEdges *[]byte // Cached sorted edges for lexicographic output
 }
 
 func newInner(inter interval) *innerNode {
@@ -80,7 +100,39 @@ func newInner(inter interval) *innerNode {
 		children:   map[byte]Node{}}
 }
 
+func (n *innerNode) IsLeaf() bool {
+	return false
+}
+
+func sortChildren(n *innerNode) *[]byte {
+	edges := []byte{}
+	for k := range n.children {
+		edges = append(edges, k)
+	}
+	sort.Slice(edges, func(i, j int) bool {
+		return edges[i] < edges[j]
+	})
+	return &edges
+}
+
+func (n *innerNode) Children() <-chan Node {
+	if n.sortedEdges == nil {
+		n.sortedEdges = sortChildren(n)
+	}
+	res := make(chan Node)
+	go func() {
+		for _, edge := range *n.sortedEdges {
+			res <- n.children[edge]
+		}
+		close(res)
+	}()
+	return res
+}
+
 func (n *innerNode) addChild(child Node, x string) {
+	if n.sortedEdges != nil {
+		panic("The edges should never be sorted while we construct the tree.")
+	}
 	n.children[x[child.getInterval().i]] = child
 	child.setParent(n)
 }
@@ -104,17 +156,14 @@ func (n *innerNode) ToDot(x string, w io.Writer) {
 	}
 }
 
+func (n *innerNode) leafLabels(outchan chan<- int) {
+	for child := range n.Children() {
+		child.leafLabels(outchan)
+	}
+}
+
 func (n *innerNode) LeafLabels() <-chan int {
-	outchan := make(chan int)
-	go func() {
-		// Just write all the children's leaves to
-		// the output
-		for _, child := range n.children {
-			outchan <- (<-child.LeafLabels())
-		}
-		close(outchan)
-	}()
-	return outchan
+	return leafLabelsIterator(n)
 }
 
 type leafNode struct {
@@ -128,19 +177,28 @@ func newLeaf(idx int, inter interval) *leafNode {
 		leafIdx:    idx}
 }
 
+func (n *leafNode) IsLeaf() bool {
+	return true
+}
+
+func (n *leafNode) Children() <-chan Node {
+	res := make(chan Node)
+	close(res)
+	return res
+}
+
 func (n *leafNode) ToDot(x string, w io.Writer) {
 	fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
 		n.parent, n, ReplaceSentinel(n.EdgeLabel(x)))
 	fmt.Fprintf(w, "\"%p\"[label=%d]\n", n, n.leafIdx)
 }
 
+func (n *leafNode) leafLabels(outchan chan<- int) {
+	outchan <- n.leafIdx
+}
+
 func (n *leafNode) LeafLabels() <-chan int {
-	outchan := make(chan int)
-	go func() {
-		outchan <- n.leafIdx
-		close(outchan)
-	}()
-	return outchan
+	return leafLabelsIterator(n)
 }
 
 // -- Suffix tree --------------------------
