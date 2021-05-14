@@ -6,69 +6,92 @@ import (
 	"strings"
 )
 
+// -- Substrings represented as intervals -----------------
 type interval struct {
 	i, j int
-}
-
-// With slicing, we get a substring in constant
-// time
-func (r interval) substr(x string) string {
-	return x[r.i:r.j]
 }
 
 func (r interval) length() int {
 	return r.j - r.i
 }
 
-func (r interval) slice(i, j int) interval {
-	if j < 0 {
-		j = r.length()
-	}
-	if i < 0 || i > r.length() || j > r.length() {
-		panic("Slicing outside of range")
-	}
-	if j < i {
-		panic("Interval must end after it begins")
-	}
-	return interval{r.i + i, r.i + j}
+// Chump off the first k letters of an interval
+func (r interval) chump(k int) interval {
+	return interval{r.i + k, r.j}
 }
 
-type STNode struct {
+func (r interval) prefix(k int) interval {
+	return interval{r.i, r.i + k}
+}
+
+func (r interval) substr(x string) string {
+	return x[r.i:r.j]
+}
+
+// -- Suffix tree nodes --------------------
+type Node interface {
+	// Private interface
+	getInterval() interval
+	chumpInterval(int)
+	setParent(parent Node)
+	leafLabels(res *[]int)
+
+	// Public interface
+	Parent() Node
+	EdgeLabel(x string) string
+	ToDot(x string, w io.Writer)
+	LeafLabels() []int
+}
+
+// helper function to implement the Node
+// interface
+func nodeLeafLabels(n Node) []int {
+	res := []int{}
+	n.leafLabels(&res)
+	return res
+}
+
+// Data both in inner nodes and in leaf-nodes
+type sharedNode struct {
 	interval
-	LeafIdx    int
-	Parent     *STNode
-	suffixLink *STNode
-	Children   map[byte]*STNode
+	parent Node
 }
 
-func newInner(inter interval) *STNode {
-	return &STNode{
-		interval: inter,
-		LeafIdx:  -1,
-		Children: map[byte]*STNode{}}
+func (n *sharedNode) Parent() Node {
+	return n.parent
 }
 
-func newLeaf(idx int, inter interval) *STNode {
-	return &STNode{
-		interval: inter,
-		LeafIdx:  idx}
+func (n *sharedNode) setParent(parent Node) {
+	n.parent = parent
 }
 
-func (n *STNode) IsSTInner() bool {
-	return n.LeafIdx == -1
+func (n *sharedNode) getInterval() interval {
+	return n.interval
 }
 
-func (n *STNode) IsSTLeaf() bool {
-	return n.LeafIdx != -1
+func (n *sharedNode) chumpInterval(i int) {
+	n.i += i
 }
 
-func (n *STNode) EdgeLabel(x string) string {
+func (n *sharedNode) EdgeLabel(x string) string {
 	return n.interval.substr(x)
 }
 
-func (n *STNode) addChild(child *STNode, x string) {
-	n.Children[x[child.i]] = child
-	child.Parent = n
+type innerNode struct {
+	sharedNode
+	suffixLink Node
+	children   map[byte]Node
+}
+
+func newInner(inter interval) *innerNode {
+	return &innerNode{
+		sharedNode: sharedNode{interval: inter},
+		children:   map[byte]Node{}}
+}
+
+func (n *innerNode) addChild(child Node, x string) {
+	n.children[x[child.getInterval().i]] = child
+	child.setParent(n)
 }
 
 func replaceSentinel(x string) string {
@@ -76,27 +99,60 @@ func replaceSentinel(x string) string {
 	return strings.ReplaceAll(x, "\x00", "†")
 }
 
-func (n *STNode) ToDot(x string, w io.Writer) {
-	if n.Parent == nil {
+func (n *innerNode) ToDot(x string, w io.Writer) {
+	if n.parent == nil {
 		// Root
 		fmt.Fprintf(w, "\"%p\"[label=\"\", shape=circle, style=filled, fillcolor=grey]\n", n)
 	} else {
 		fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
-			n.Parent, n, replaceSentinel(n.EdgeLabel(x)))
-		if n.IsSTLeaf() {
-			fmt.Fprintf(w, "\"%p\"[label=%d]\n", n, n.LeafIdx)
-		} else {
-			fmt.Fprintf(w, "\"%p\"[shape=point]\n", n)
-		}
+			n.Parent(), n, replaceSentinel(n.EdgeLabel(x)))
+		fmt.Fprintf(w, "\"%p\"[shape=point]\n", n)
 	}
-	for _, child := range n.Children {
+	for _, child := range n.children {
 		child.ToDot(x, w)
 	}
 }
 
+func (n *innerNode) leafLabels(res *[]int) {
+	for _, child := range n.children {
+		child.leafLabels(res)
+	}
+}
+
+func (n *innerNode) LeafLabels() []int {
+	return nodeLeafLabels(n)
+}
+
+type leafNode struct {
+	sharedNode
+	leafIdx int
+}
+
+func newLeaf(idx int, inter interval) *leafNode {
+	return &leafNode{
+		sharedNode: sharedNode{interval: inter},
+		leafIdx:    idx}
+}
+
+func (n *leafNode) ToDot(x string, w io.Writer) {
+	fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
+		n.parent, n, replaceSentinel(n.EdgeLabel(x)))
+	fmt.Fprintf(w, "\"%p\"[label=%d]\n", n, n.leafIdx)
+}
+
+func (n *leafNode) leafLabels(res *[]int) {
+	*res = append(*res, n.leafIdx)
+}
+
+func (n *leafNode) LeafLabels() []int {
+	return nodeLeafLabels(n)
+}
+
+// -- Suffix tree --------------------------
+
 type SuffixTree struct {
 	String string
-	Root   *STNode
+	Root   Node
 }
 
 func (st *SuffixTree) ToDot(w io.Writer) {
@@ -104,6 +160,8 @@ func (st *SuffixTree) ToDot(w io.Writer) {
 	st.Root.ToDot(st.String, w)
 	fmt.Fprintln(w, "}")
 }
+
+// -- Construction algorithms --------------------------
 
 // This function doesn't really belong with suffix trees,
 // but this is where I need it...
@@ -127,46 +185,31 @@ func lenSharedPrefix(i1, i2 interval, x string) int {
 	return i
 }
 
-func sscan(n *STNode, inter interval, x string) (*STNode, int, interval) {
+func sscan(n Node, inter interval, x string) (Node, int, interval) {
 	if inter.length() == 0 {
 		return n, 0, inter
 	}
-	v, ok := n.Children[x[inter.i]]
+	// If we scan on a node, it is an inner node.
+	v, ok := n.(*innerNode).children[x[inter.i]]
 	if !ok {
 		return n, 0, inter
 	}
-	i := lenSharedPrefix(v.interval, inter, x)
-	if i == inter.length() || i < v.interval.length() {
+	i := lenSharedPrefix(v.getInterval(), inter, x)
+	if i == inter.length() || i < v.getInterval().length() {
 		return v, i, inter
 	}
 	// Continue from v (exploiting tail call optimisation)
-	return sscan(v, inter.slice(i, -1), x)
+	return sscan(v, inter.chump(i), x)
 }
 
-func fscan(n *STNode, inter interval, x string) (*STNode, int, interval) {
-	if inter.length() == 0 {
-		return n, 0, inter
-	}
-	v, ok := n.Children[x[inter.i]]
-	if !ok {
-		panic("With fscan there should always be an out-edge")
-	}
-	i := min(v.interval.length(), inter.length())
-	if i == inter.length() {
-		return v, i, inter
-	}
-	// Continue from v (exploiting tail call optimisation)
-	return sscan(v, inter.slice(i, -1), x)
-}
-
-func breakEdge(n *STNode, depth, leafidx int, y interval, x string) *STNode {
-	if n.Parent == nil {
+func breakEdge(n Node, depth, leafidx int, y interval, x string) *leafNode {
+	if n.Parent() == nil {
 		panic("A node must have a parent when we break its edge.")
 	}
-	new_node := newInner(n.interval.slice(0, depth))
-	n.Parent.addChild(new_node, x)
+	new_node := newInner(n.getInterval().prefix(depth))
+	n.Parent().(*innerNode).addChild(new_node, x)
 	new_leaf := newLeaf(leafidx, y)
-	n.i += depth
+	n.chumpInterval(depth)
 	new_node.addChild(new_leaf, x)
 	new_node.addChild(n, x)
 	return new_leaf
@@ -179,19 +222,38 @@ func NaiveST(x string) SuffixTree {
 	for i := 0; i < len(x); i++ {
 		v, j, y := sscan(root, interval{i, len(x)}, x)
 		if j == 0 {
-			v.addChild(newLeaf(i, y), x)
+			// A mismatch when we try to leave a node
+			// means that it is an inner node
+			v.(*innerNode).addChild(newLeaf(i, y), x)
 		} else {
-			breakEdge(v, j, i, y.slice(j, -1), x)
+			breakEdge(v, j, i, y.chump(j), x)
 		}
 	}
 	return SuffixTree{x, root}
 }
 
-func (v *STNode) suffix() interval {
+func fscan(n Node, inter interval, x string) (Node, int, interval) {
+	if inter.length() == 0 {
+		return n, 0, inter
+	}
+	// If we scan on a node, it is an inner node
+	v, ok := n.(*innerNode).children[x[inter.i]]
+	if !ok {
+		panic("With fscan there should always be an out-edge")
+	}
+	i := min(v.getInterval().length(), inter.length())
+	if i == inter.length() {
+		return v, i, inter
+	}
+	// Continue from v (exploiting tail call optimisation)
+	return sscan(v, inter.chump(i), x)
+}
+
+func (v *sharedNode) suffix() interval {
 	// If v's parent is the root, chop
 	// off one index
-	if v.Parent.Parent == nil {
-		return v.interval.slice(1, -1)
+	if v.parent.Parent() == nil {
+		return v.chump(1)
 	} else {
 		return v.interval
 	}
@@ -207,25 +269,25 @@ func McCreight(x string) SuffixTree {
 	// The bits of the suffix we need to search for
 	var y, z interval
 	// ynode is the node we get to when searching for y
-	var ynode *STNode
+	var ynode Node
 
 	for i := 1; i < len(x); i++ {
-		p := currLeaf.Parent
+		p := currLeaf.Parent().(*innerNode)
 
 		if p.suffixLink != nil {
 			// We don't need y here, just z and ynode
 			z = currLeaf.suffix()
 			ynode = p.suffixLink
 		} else {
-			pp := p.Parent
+			pp := p.parent.(*innerNode)
 			// this time we need to search in both y and z
 			y = p.suffix()
 			z = currLeaf.interval
 			ynode, depth, _ := fscan(pp.suffixLink, y, x)
-			if depth < ynode.interval.length() {
+			if depth < ynode.getInterval().length() {
 				// ended on an edge
 				currLeaf = breakEdge(ynode, depth, i, z, x)
-				p.suffixLink = currLeaf.Parent
+				p.suffixLink = currLeaf.parent
 				continue // Go to next suffix, we are done here
 			}
 
@@ -239,10 +301,10 @@ func McCreight(x string) SuffixTree {
 		if depth == 0 {
 			// Landed on a node
 			currLeaf = newLeaf(i, w)
-			n.addChild(currLeaf, x)
+			n.(*innerNode).addChild(currLeaf, x)
 		} else {
 			// Landed on an edge
-			currLeaf = breakEdge(n, depth, i, w.slice(depth, -1), x)
+			currLeaf = breakEdge(n, depth, i, w.chump(depth), x)
 		}
 	}
 	return SuffixTree{x, root}
