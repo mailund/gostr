@@ -13,11 +13,11 @@ func testSuffixTree(
 	t *testing.T) *SuffixTree {
 	st := construction(x)
 
-	for i := range st.Root.LeafLabels() {
+	for i := range LeafLabels(st.Root) {
 		fmt.Println(i)
 	}
 
-	leaves := st.Root.LeafLabels()
+	leaves := LeafLabels(st.Root)
 	noLeaves := 0
 	prev, ok := <-leaves
 	if ok {

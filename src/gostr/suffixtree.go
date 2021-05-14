@@ -29,30 +29,51 @@ func (r interval) substr(x string) string {
 	return x[r.i:r.j]
 }
 
-// -- Suffix tree nodes --------------------
-type Node interface {
-	// Private interface
+// STNode represents the nodes in a suffix tree.
+type STNode interface {
+	// This is an opague type, so the interface
+	// is interly private. There are functions below
+	// for the public interface
 	getInterval() interval
 	chumpInterval(int)
-	setParent(parent Node)
+
+	getParent() STNode
+	setParent(parent STNode)
+
+	getChildren(chan<- STNode)
 	leafLabels(chan<- int)
 
-	// -- Public interface -----
-	// IsLeaf is false for inner nodes and true for leaves.
-	IsLeaf() bool
-	// Parent gets the parent of a node.
-	Parent() Node
-	// Children gives you a channel to iterate through a node's children.
-	Children() <-chan Node
-	// EdgeLabel extracts the substring of x corresponding to the edge interval.
-	EdgeLabel(x string) string
-	// LeafLabels gets the indices for all labels in the subtree of a node.
-	LeafLabels() <-chan int
-	// ToDot writes the subtree in a node to a writer, getting the string from x.
-	ToDot(x string, w io.Writer)
+	isLeaf() bool
+
+	toDot(x string, w io.Writer)
+
+	edgeLabel(x string) string
 }
 
-func leafLabelsIterator(n Node) <-chan int {
+// -- Public interface to STNodes ------
+
+func IsLeaf(n STNode) bool {
+	return n.isLeaf()
+}
+
+func Parent(n STNode) STNode {
+	return n.getParent()
+}
+
+func Children(n STNode) <-chan STNode {
+	outchan := make(chan STNode)
+	go func() {
+		n.getChildren(outchan)
+		close(outchan)
+	}()
+	return outchan
+}
+
+func ToDot(n STNode, x string, w io.Writer) {
+	n.toDot(x, w)
+}
+
+func LeafLabels(n STNode) <-chan int {
 	outres := make(chan int)
 	go func() {
 		n.leafLabels(outres)
@@ -61,17 +82,21 @@ func leafLabelsIterator(n Node) <-chan int {
 	return outres
 }
 
-// Data both in inner nodes and in leaf-nodes
-type sharedNode struct {
-	interval
-	parent Node
+func EdgeLabel(n STNode, x string) string {
+	return n.edgeLabel(x)
 }
 
-func (n *sharedNode) Parent() Node {
+// Data both in inner STNodes and in leaf-STNodes
+type sharedNode struct {
+	interval
+	parent STNode
+}
+
+func (n *sharedNode) getParent() STNode {
 	return n.parent
 }
 
-func (n *sharedNode) setParent(parent Node) {
+func (n *sharedNode) setParent(parent STNode) {
 	n.parent = parent
 }
 
@@ -83,24 +108,24 @@ func (n *sharedNode) chumpInterval(i int) {
 	n.i += i
 }
 
-func (n *sharedNode) EdgeLabel(x string) string {
+func (n *sharedNode) edgeLabel(x string) string {
 	return n.interval.substr(x)
 }
 
 type innerNode struct {
 	sharedNode
-	suffixLink  Node
-	children    map[byte]Node
+	suffixLink  STNode
+	children    map[byte]STNode
 	sortedEdges *[]byte // Cached sorted edges for lexicographic output
 }
 
 func newInner(inter interval) *innerNode {
 	return &innerNode{
 		sharedNode: sharedNode{interval: inter},
-		children:   map[byte]Node{}}
+		children:   map[byte]STNode{}}
 }
 
-func (n *innerNode) IsLeaf() bool {
+func (n *innerNode) isLeaf() bool {
 	return false
 }
 
@@ -115,21 +140,16 @@ func sortChildren(n *innerNode) *[]byte {
 	return &edges
 }
 
-func (n *innerNode) Children() <-chan Node {
+func (n *innerNode) getChildren(res chan<- STNode) {
 	if n.sortedEdges == nil {
 		n.sortedEdges = sortChildren(n)
 	}
-	res := make(chan Node)
-	go func() {
-		for _, edge := range *n.sortedEdges {
-			res <- n.children[edge]
-		}
-		close(res)
-	}()
-	return res
+	for _, edge := range *n.sortedEdges {
+		res <- n.children[edge]
+	}
 }
 
-func (n *innerNode) addChild(child Node, x string) {
+func (n *innerNode) addChild(child STNode, x string) {
 	if n.sortedEdges != nil {
 		panic("The edges should never be sorted while we construct the tree.")
 	}
@@ -142,28 +162,24 @@ func ReplaceSentinel(x string) string {
 	return strings.ReplaceAll(x, "\x00", "†")
 }
 
-func (n *innerNode) ToDot(x string, w io.Writer) {
+func (n *innerNode) toDot(x string, w io.Writer) {
 	if n.parent == nil {
 		// Root
 		fmt.Fprintf(w, "\"%p\"[label=\"\", shape=circle, style=filled, fillcolor=grey]\n", n)
 	} else {
 		fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
-			n.Parent(), n, ReplaceSentinel(n.EdgeLabel(x)))
+			n.getParent(), n, ReplaceSentinel(n.edgeLabel(x)))
 		fmt.Fprintf(w, "\"%p\"[shape=point]\n", n)
 	}
 	for _, child := range n.children {
-		child.ToDot(x, w)
+		child.toDot(x, w)
 	}
 }
 
 func (n *innerNode) leafLabels(outchan chan<- int) {
-	for child := range n.Children() {
+	for child := range Children(n) {
 		child.leafLabels(outchan)
 	}
-}
-
-func (n *innerNode) LeafLabels() <-chan int {
-	return leafLabelsIterator(n)
 }
 
 type leafNode struct {
@@ -177,19 +193,17 @@ func newLeaf(idx int, inter interval) *leafNode {
 		leafIdx:    idx}
 }
 
-func (n *leafNode) IsLeaf() bool {
+func (n *leafNode) isLeaf() bool {
 	return true
 }
 
-func (n *leafNode) Children() <-chan Node {
-	res := make(chan Node)
-	close(res)
-	return res
+func (n *leafNode) getChildren(res chan<- STNode) {
+	// No children in a leaf
 }
 
-func (n *leafNode) ToDot(x string, w io.Writer) {
+func (n *leafNode) toDot(x string, w io.Writer) {
 	fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
-		n.parent, n, ReplaceSentinel(n.EdgeLabel(x)))
+		n.parent, n, ReplaceSentinel(n.edgeLabel(x)))
 	fmt.Fprintf(w, "\"%p\"[label=%d]\n", n, n.leafIdx)
 }
 
@@ -197,27 +211,23 @@ func (n *leafNode) leafLabels(outchan chan<- int) {
 	outchan <- n.leafIdx
 }
 
-func (n *leafNode) LeafLabels() <-chan int {
-	return leafLabelsIterator(n)
-}
-
 // -- Suffix tree --------------------------
 
 type SuffixTree struct {
 	String string
-	Root   Node
+	Root   STNode
 }
 
 func (st *SuffixTree) ToDot(w io.Writer) {
 	fmt.Fprintln(w, "digraph {")
-	st.Root.ToDot(st.String, w)
+	ToDot(st.Root, st.String, w)
 	fmt.Fprintln(w, "}")
 }
 
 func (st *SuffixTree) Search(p string) <-chan int {
 	n, depth, y := sscan(st.Root, interval{0, len(p)}, st.String, p)
 	if depth == y.length() {
-		return n.LeafLabels()
+		return LeafLabels(n)
 	} else {
 		res := make(chan int)
 		close(res) // No results
@@ -252,7 +262,7 @@ func lenSharedPrefix(i1, i2 interval, x, y string) int {
 // x is the underlying strings for nodes, y is the string
 // for inter (which when we construct is also x, but when we
 // search it is likely another string).
-func sscan(n Node, inter interval, x, y string) (Node, int, interval) {
+func sscan(n STNode, inter interval, x, y string) (STNode, int, interval) {
 	if inter.length() == 0 {
 		return n, 0, inter
 	}
@@ -269,12 +279,12 @@ func sscan(n Node, inter interval, x, y string) (Node, int, interval) {
 	return sscan(v, inter.chump(i), x, y)
 }
 
-func breakEdge(n Node, depth, leafidx int, y interval, x string) *leafNode {
-	if n.Parent() == nil {
+func breakEdge(n STNode, depth, leafidx int, y interval, x string) *leafNode {
+	if n.getParent() == nil {
 		panic("A node must have a parent when we break its edge.")
 	}
 	new_node := newInner(n.getInterval().prefix(depth))
-	n.Parent().(*innerNode).addChild(new_node, x)
+	n.getParent().(*innerNode).addChild(new_node, x)
 	new_leaf := newLeaf(leafidx, y)
 	n.chumpInterval(depth)
 	new_node.addChild(new_leaf, x)
@@ -299,7 +309,7 @@ func NaiveST(x string) SuffixTree {
 	return SuffixTree{x, root}
 }
 
-func fscan(n Node, inter interval, x string) (Node, int, interval) {
+func fscan(n STNode, inter interval, x string) (STNode, int, interval) {
 	if inter.length() == 0 {
 		return n, 0, inter
 	}
@@ -319,7 +329,7 @@ func fscan(n Node, inter interval, x string) (Node, int, interval) {
 func (v *sharedNode) suffix() interval {
 	// If v's parent is the root, chop
 	// off one index
-	if v.parent.Parent() == nil {
+	if v.parent.getParent() == nil {
 		return v.chump(1)
 	} else {
 		return v.interval
@@ -336,10 +346,10 @@ func McCreight(x string) SuffixTree {
 	// The bits of the suffix we need to search for
 	var y, z interval
 	// ynode is the node we get to when searching for y
-	var ynode Node
+	var ynode STNode
 
 	for i := 1; i < len(x); i++ {
-		p := currLeaf.Parent().(*innerNode)
+		p := currLeaf.getParent().(*innerNode)
 
 		if p.suffixLink != nil {
 			// We don't need y here, just z and ynode
