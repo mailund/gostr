@@ -14,6 +14,18 @@ func safe_idx(x []int, i int) int {
 	}
 }
 
+func sa3len(n int) int {
+	if n == 0 {
+		return 0
+	} else {
+		return (n-1)/3 + 1
+	}
+}
+
+func sa12len(n int) int {
+	return n - sa3len(n)
+}
+
 func symbcount(x []int, idx []int, offset int, asize int) []int {
 	counts := make([]int, asize)
 	for _, i := range idx {
@@ -62,7 +74,7 @@ func getSA12(x []int) []int {
 			but that allocates extra space for the capacity
 			so preallocating is better.
 	*/
-	SA12 := make([]int, len(x)-((len(x)-1)/3+1))
+	SA12 := make([]int, sa12len(len(x)))
 	for i, j := 0, 0; i < len(x); i++ {
 		if i%3 != 0 {
 			SA12[j] = i
@@ -85,7 +97,7 @@ func getSA3(x, SA12 []int) []int {
 	}
 	but preallocating is better
 	*/
-	SA3 := make([]int, (len(x)-1)/3+1)
+	SA3 := make([]int, sa3len(len(x)))
 	k := 0
 	if len(x)%3 == 1 {
 		SA3[k] = len(x) - 1
@@ -193,7 +205,7 @@ func buildU(x []int, alpha tripletMap) []int {
 	// The length is len(SA12) which is len(x)-(len(x)/3 + 1)
 	// but then plus the central sentinel, so don't subtract the
 	// 1.
-	u := make([]int, len(x)-len(x)/3)
+	u := make([]int, sa12len(len(x))+1)
 	k := 0
 	for i := 1; i < len(x); i += 3 {
 		u[k] = alpha[trip(x, i)]
