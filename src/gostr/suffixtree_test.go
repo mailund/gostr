@@ -8,6 +8,23 @@ import (
 	"time"
 )
 
+func checkPathLabels(n STNode, algo string, st SuffixTree, t *testing.T) {
+	switch v := n.(type) {
+	case *innerNode:
+		for _, child := range v.children {
+			checkPathLabels(child, algo, st, t)
+		}
+	case *leafNode:
+		if PathLabel(v, st.String) != st.String[v.leafIdx:] {
+			t.Errorf(`%s(%s): the path label of leaf %d should be "%s" but is "%s"`,
+				algo,
+				ReplaceSentinel(st.String), v.leafIdx,
+				ReplaceSentinel(st.String[v.leafIdx:]),
+				ReplaceSentinel(PathLabel(v, st.String)))
+		}
+	}
+}
+
 func testSuffixTree(
 	algo string,
 	construction func(string) SuffixTree,
@@ -35,6 +52,8 @@ func testSuffixTree(
 		t.Errorf(`%s("%s"): We got %d leaves but expected %d.\n`,
 			algo, x, noLeaves, len(st.String))
 	}
+
+	checkPathLabels(st.Root, algo, st, t)
 
 	return &st
 }
@@ -126,3 +145,23 @@ func TestSTRandomStrings(t *testing.T) {
 		}
 	}
 }
+
+func benchmarkConstruction(
+	b *testing.B,
+	constr func(string) SuffixTree,
+	n int) {
+	seed := time.Now().UTC().UnixNano()
+	rng := rand.New(rand.NewSource(seed))
+	x := randomString(n, "abcdefg", rng)
+	for i := 0; i < b.N; i++ {
+		NaiveST(x)
+	}
+}
+
+func BenchmarkNaive1000(b *testing.B)   { benchmarkConstruction(b, NaiveST, 1000) }
+func BenchmarkNaive10000(b *testing.B)  { benchmarkConstruction(b, NaiveST, 10000) }
+func BenchmarkNaive100000(b *testing.B) { benchmarkConstruction(b, NaiveST, 100000) }
+
+func BenchmarkMcCreight1000(b *testing.B)   { benchmarkConstruction(b, McCreight, 1000) }
+func BenchmarkMcCreight10000(b *testing.B)  { benchmarkConstruction(b, McCreight, 10000) }
+func BenchmarkMcCreight100000(b *testing.B) { benchmarkConstruction(b, McCreight, 100000) }

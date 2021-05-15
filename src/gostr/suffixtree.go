@@ -153,6 +153,9 @@ func (n *innerNode) addChild(child STNode, x string) {
 	if n.sortedEdges != nil {
 		panic("The edges should never be sorted while we construct the tree.")
 	}
+	if child.getInterval().length() == 0 {
+		panic("This child has an empty interval")
+	}
 	n.children[x[child.getInterval().i]] = child
 	child.setParent(n)
 }
@@ -235,6 +238,17 @@ func (st *SuffixTree) Search(p string) <-chan int {
 	}
 }
 
+func PathLabel(n STNode, x string) string {
+	labels := []string{EdgeLabel(n, x)}
+	for p := n.getParent(); p != nil; p = p.getParent() {
+		labels = append(labels, EdgeLabel(p, x))
+	}
+	for i, j := 0, len(labels)-1; i < j; i, j = i+1, j-1 {
+		labels[i], labels[j] = labels[j], labels[i]
+	}
+	return strings.Join(labels, "")
+}
+
 // -- Construction algorithms --------------------------
 
 // This function doesn't really belong with suffix trees,
@@ -301,6 +315,9 @@ func NaiveST(x string) SuffixTree {
 		if j == 0 {
 			// A mismatch when we try to leave a node
 			// means that it is an inner node
+			if y.length() == 0 {
+				panic("we managed to search to the end!")
+			}
 			v.(*innerNode).addChild(newLeaf(i, y), x)
 		} else {
 			breakEdge(v, j, i, y.chump(j), x)
@@ -347,20 +364,25 @@ func McCreight(x string) SuffixTree {
 	var y, z interval
 	// ynode is the node we get to when searching for y
 	var ynode STNode
+	// depth is how far down an edge we have searched
+	var depth int
 
 	for i := 1; i < len(x); i++ {
 		p := currLeaf.getParent().(*innerNode)
 
 		if p.suffixLink != nil {
 			// We don't need y here, just z and ynode
+			z = currLeaf.interval
 			z = currLeaf.suffix()
 			ynode = p.suffixLink
+
 		} else {
 			pp := p.parent.(*innerNode)
 			// this time we need to search in both y and z
 			y = p.suffix()
 			z = currLeaf.interval
-			ynode, depth, _ := fscan(pp.suffixLink, y, x)
+
+			ynode, depth, _ = fscan(pp.suffixLink, y, x)
 			if depth < ynode.getInterval().length() {
 				// ended on an edge
 				currLeaf = breakEdge(ynode, depth, i, z, x)
@@ -375,10 +397,15 @@ func McCreight(x string) SuffixTree {
 		// This is the slow scan part, from ynode and the rest
 		// of the suffix, which is z.
 		n, depth, w := sscan(ynode, z, x, x)
+		if w.length() == 0 {
+			panic("w should not be empty")
+		}
+
 		if depth == 0 {
 			// Landed on a node
 			currLeaf = newLeaf(i, w)
 			n.(*innerNode).addChild(currLeaf, x)
+
 		} else {
 			// Landed on an edge
 			currLeaf = breakEdge(n, depth, i, w.chump(depth), x)
