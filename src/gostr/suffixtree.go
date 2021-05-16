@@ -34,56 +34,144 @@ type STNode interface {
 	// This is an opague type, so the interface
 	// is interly private. There are functions below
 	// for the public interface
-	getInterval() interval
-	chumpInterval(int)
 
-	getParent() STNode
-	setParent(parent STNode)
-
-	getChildren(chan<- STNode)
-	leafLabels(chan<- int)
-
-	isLeaf() bool
-
+	// Methods where it makes sense to have dynamic dispatch
+	// (And where we don't lose too much performance on it)
 	toDot(x string, w io.Writer)
+}
 
-	edgeLabel(x string) string
+// Dynamic dispatch is slower than the switch statements, and I really
+// only want the interface so I can store two types of nodes with a common
+// interface, so I do it this way. It isn't as pretty (especially because
+// they share functionality where I have repeated code), but it is faster
+
+// -- Private interfce to STNodes ------
+func castToShared(n STNode) *sharedNode {
+	switch v := n.(type) {
+	case *leafNode:
+		return &v.sharedNode
+	case *innerNode:
+		return &v.sharedNode
+	default:
+		panic("Unknown STNode type")
+	}
+}
+
+func getInterval(n STNode) interval {
+	return castToShared(n).interval
+}
+
+func setParent(n, parent STNode) {
+	castToShared(n).parent = parent
+}
+
+func chumpInterval(n STNode, depth int) {
+	castToShared(n).i += depth
 }
 
 // -- Public interface to STNodes ------
 
 func IsLeaf(n STNode) bool {
-	return n.isLeaf()
+	switch n.(type) {
+	case *leafNode:
+		return true
+	case *innerNode:
+		return false
+	default:
+		panic("Unknown STNode type")
+	}
 }
 
 func Parent(n STNode) STNode {
-	return n.getParent()
+	return castToShared(n).parent
 }
 
-func Children(n STNode) <-chan STNode {
-	outchan := make(chan STNode)
-	go func() {
-		n.getChildren(outchan)
-		close(outchan)
-	}()
-	return outchan
+func Children(n STNode) []STNode {
+	switch v := n.(type) {
+	case *innerNode:
+		if v.sortedChildren == nil {
+			v.sortChildren()
+		}
+		return *v.sortedChildren
+	default:
+		return []STNode{}
+	}
+}
+
+func LeafIndex(n STNode) int {
+	switch v := n.(type) {
+	case *leafNode:
+		return v.leafIdx
+	default:
+		panic("You can only get leaf indices from a leaf")
+	}
 }
 
 func ToDot(n STNode, x string, w io.Writer) {
 	n.toDot(x, w)
 }
 
-func LeafLabels(n STNode) <-chan int {
-	outres := make(chan int)
-	go func() {
-		n.leafLabels(outres)
-		close(outres)
-	}()
-	return outres
+func EdgeLabel(n STNode, x string) string {
+	return castToShared(n).substr(x)
 }
 
-func EdgeLabel(n STNode, x string) string {
-	return n.edgeLabel(x)
+func LeafIndicesVisitor(n STNode, visitor func(int)) {
+	switch v := n.(type) {
+	case *leafNode:
+		visitor(v.leafIdx)
+	case *innerNode:
+		for _, child := range v.getChildren() {
+			LeafIndicesVisitor(child, visitor)
+		}
+	default:
+		panic("Unknown STNode type")
+	}
+}
+
+type LeafIndexIter struct {
+	stack []STNode
+}
+
+func (iter *LeafIndexIter) push(n STNode) {
+	iter.stack = append(iter.stack, n)
+}
+
+func (iter *LeafIndexIter) pop() STNode {
+	n := len(iter.stack) - 1
+	res := iter.stack[n]
+	iter.stack = iter.stack[:n]
+	return res
+}
+
+func (iter *LeafIndexIter) HasMore() bool {
+	return len(iter.stack) > 0
+}
+
+func (iter *LeafIndexIter) Next() int {
+	if !iter.HasMore() {
+		panic("You can't call Next() on an iterator that has reached the end.")
+	}
+	for {
+		switch n := iter.pop().(type) {
+		case *leafNode:
+			return n.leafIdx
+		case *innerNode:
+			children := n.getChildren()
+			for i := len(children) - 1; i >= 0; i-- {
+				iter.push(children[i])
+			}
+		default:
+			panic("Unknown STNode type")
+		}
+	}
+}
+
+func LeafIndicesIterator(n STNode) LeafIndexIter {
+	iter := LeafIndexIter{}
+	// Preallocate some stack space (but it will grow as needed)
+	iter.stack = make([]STNode, 1, 100)
+	iter.stack[0] = n
+	return iter
 }
 
 // Data both in inner STNodes and in leaf-STNodes
@@ -92,31 +180,15 @@ type sharedNode struct {
 	parent STNode
 }
 
-func (n *sharedNode) getParent() STNode {
-	return n.parent
-}
-
-func (n *sharedNode) setParent(parent STNode) {
-	n.parent = parent
-}
-
-func (n *sharedNode) getInterval() interval {
-	return n.interval
-}
-
-func (n *sharedNode) chumpInterval(i int) {
-	n.i += i
-}
-
 func (n *sharedNode) edgeLabel(x string) string {
 	return n.interval.substr(x)
 }
 
 type innerNode struct {
 	sharedNode
-	suffixLink  STNode
-	children    map[byte]STNode
-	sortedEdges *[]byte // Cached sorted edges for lexicographic output
+	suffixLink     STNode
+	children       map[byte]STNode
+	sortedChildren *[]STNode // Cached sorted edges for lexicographic output
 }
 
 func newInner(inter interval) *innerNode {
@@ -125,11 +197,7 @@ func newInner(inter interval) *innerNode {
 		children:   map[byte]STNode{}}
 }
 
-func (n *innerNode) isLeaf() bool {
-	return false
-}
-
-func sortChildren(n *innerNode) *[]byte {
+func (n *innerNode) sortChildren() {
 	edges := []byte{}
 	for k := range n.children {
 		edges = append(edges, k)
@@ -137,27 +205,26 @@ func sortChildren(n *innerNode) *[]byte {
 	sort.Slice(edges, func(i, j int) bool {
 		return edges[i] < edges[j]
 	})
-	return &edges
+	children := make([]STNode, len(edges))
+	for i, e := range edges {
+		children[i] = n.children[e]
+	}
+	n.sortedChildren = &children
 }
 
-func (n *innerNode) getChildren(res chan<- STNode) {
-	if n.sortedEdges == nil {
-		n.sortedEdges = sortChildren(n)
+func (n *innerNode) getChildren() []STNode {
+	if n.sortedChildren == nil {
+		n.sortChildren()
 	}
-	for _, edge := range *n.sortedEdges {
-		res <- n.children[edge]
-	}
+	return *n.sortedChildren
 }
 
 func (n *innerNode) addChild(child STNode, x string) {
-	if n.sortedEdges != nil {
+	if n.sortedChildren != nil {
 		panic("The edges should never be sorted while we construct the tree.")
 	}
-	if child.getInterval().length() == 0 {
-		panic("This child has an empty interval")
-	}
-	n.children[x[child.getInterval().i]] = child
-	child.setParent(n)
+	n.children[x[getInterval(child).i]] = child
+	setParent(child, n)
 }
 
 func ReplaceSentinel(x string) string {
@@ -171,17 +238,11 @@ func (n *innerNode) toDot(x string, w io.Writer) {
 		fmt.Fprintf(w, "\"%p\"[label=\"\", shape=circle, style=filled, fillcolor=grey]\n", n)
 	} else {
 		fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
-			n.getParent(), n, ReplaceSentinel(n.edgeLabel(x)))
+			n.parent, n, ReplaceSentinel(n.edgeLabel(x)))
 		fmt.Fprintf(w, "\"%p\"[shape=point]\n", n)
 	}
 	for _, child := range n.children {
 		child.toDot(x, w)
-	}
-}
-
-func (n *innerNode) leafLabels(outchan chan<- int) {
-	for child := range Children(n) {
-		child.leafLabels(outchan)
 	}
 }
 
@@ -196,22 +257,10 @@ func newLeaf(idx int, inter interval) *leafNode {
 		leafIdx:    idx}
 }
 
-func (n *leafNode) isLeaf() bool {
-	return true
-}
-
-func (n *leafNode) getChildren(res chan<- STNode) {
-	// No children in a leaf
-}
-
 func (n *leafNode) toDot(x string, w io.Writer) {
 	fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
 		n.parent, n, ReplaceSentinel(n.edgeLabel(x)))
 	fmt.Fprintf(w, "\"%p\"[label=%d]\n", n, n.leafIdx)
-}
-
-func (n *leafNode) leafLabels(outchan chan<- int) {
-	outchan <- n.leafIdx
 }
 
 // -- Suffix tree --------------------------
@@ -227,20 +276,18 @@ func (st *SuffixTree) ToDot(w io.Writer) {
 	fmt.Fprintln(w, "}")
 }
 
-func (st *SuffixTree) Search(p string) <-chan int {
+func (st *SuffixTree) Search(p string) LeafIndexIter {
 	n, depth, y := sscan(st.Root, interval{0, len(p)}, st.String, p)
 	if depth == y.length() {
-		return LeafLabels(n)
+		return LeafIndicesIterator(n)
 	} else {
-		res := make(chan int)
-		close(res) // No results
-		return res
+		return LeafIndexIter{}
 	}
 }
 
 func PathLabel(n STNode, x string) string {
 	labels := []string{EdgeLabel(n, x)}
-	for p := n.getParent(); p != nil; p = p.getParent() {
+	for p := Parent(n); p != nil; p = Parent(p) {
 		labels = append(labels, EdgeLabel(p, x))
 	}
 	for i, j := 0, len(labels)-1; i < j; i, j = i+1, j-1 {
@@ -285,8 +332,8 @@ func sscan(n STNode, inter interval, x, y string) (STNode, int, interval) {
 	if !ok {
 		return n, 0, inter
 	}
-	i := lenSharedPrefix(v.getInterval(), inter, x, y)
-	if i == inter.length() || i < v.getInterval().length() {
+	i := lenSharedPrefix(getInterval(v), inter, x, y)
+	if i == inter.length() || i < getInterval(v).length() {
 		return v, i, inter
 	}
 	// Continue from v (exploiting tail call optimisation)
@@ -294,13 +341,13 @@ func sscan(n STNode, inter interval, x, y string) (STNode, int, interval) {
 }
 
 func breakEdge(n STNode, depth, leafidx int, y interval, x string) *leafNode {
-	if n.getParent() == nil {
+	if Parent(n) == nil {
 		panic("A node must have a parent when we break its edge.")
 	}
-	new_node := newInner(n.getInterval().prefix(depth))
-	n.getParent().(*innerNode).addChild(new_node, x)
+	new_node := newInner(getInterval(n).prefix(depth))
+	Parent(n).(*innerNode).addChild(new_node, x)
 	new_leaf := newLeaf(leafidx, y)
-	n.chumpInterval(depth)
+	chumpInterval(n, depth)
 	new_node.addChild(new_leaf, x)
 	new_node.addChild(n, x)
 	return new_leaf
@@ -335,7 +382,7 @@ func fscan(n STNode, inter interval, x string) (STNode, int, interval) {
 	if !ok {
 		panic("With fscan there should always be an out-edge")
 	}
-	i := min(v.getInterval().length(), inter.length())
+	i := min(getInterval(v).length(), inter.length())
 	if i == inter.length() {
 		return v, i, inter
 	}
@@ -346,7 +393,7 @@ func fscan(n STNode, inter interval, x string) (STNode, int, interval) {
 func (v *sharedNode) suffix() interval {
 	// If v's parent is the root, chop
 	// off one index
-	if v.parent.getParent() == nil {
+	if Parent(v.parent) == nil {
 		return v.chump(1)
 	} else {
 		return v.interval
@@ -368,11 +415,10 @@ func McCreight(x string) SuffixTree {
 	var depth int
 
 	for i := 1; i < len(x); i++ {
-		p := currLeaf.getParent().(*innerNode)
+		p := currLeaf.parent.(*innerNode)
 
 		if p.suffixLink != nil {
 			// We don't need y here, just z and ynode
-			z = currLeaf.interval
 			z = currLeaf.suffix()
 			ynode = p.suffixLink
 
@@ -383,7 +429,7 @@ func McCreight(x string) SuffixTree {
 			z = currLeaf.interval
 
 			ynode, depth, _ = fscan(pp.suffixLink, y, x)
-			if depth < ynode.getInterval().length() {
+			if depth < getInterval(ynode).length() {
 				// ended on an edge
 				currLeaf = breakEdge(ynode, depth, i, z, x)
 				p.suffixLink = currLeaf.parent
