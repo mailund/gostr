@@ -32,38 +32,12 @@ func testSuffixTree(
 	t *testing.T) *SuffixTree {
 	st := construction(x)
 
-	t.Logf("The leaf labels iterator is out of commission for now")
-
 	leaves := []int{}
-	LeafIndicesVisitor(
+	LeafIndices(
 		st.Root,
 		func(idx int) { leaves = append(leaves, idx) })
 
 	noLeaves := 0
-	if len(leaves) > 0 {
-		prev := leaves[0]
-		noLeaves++
-		for i := 1; i < len(leaves); i++ {
-			if st.String[prev:] >= st.String[leaves[i]:] {
-				t.Errorf(`We got the leaf "%s" before leaf "%s" in %s("%s").`,
-					ReplaceSentinel(st.String[prev:]),
-					ReplaceSentinel(st.String[leaves[i]:]),
-					algo, x)
-			}
-			noLeaves++
-			prev = leaves[i]
-		}
-	}
-	if noLeaves != len(st.String) {
-		t.Errorf(`%s("%s"): We got %d leaves but expected %d.\n`,
-			algo, x, noLeaves, len(st.String))
-	}
-
-	leaves = []int{}
-	for iter := LeafIndicesIterator(st.Root); iter.HasMore(); {
-		leaves = append(leaves, iter.Next())
-	}
-	noLeaves = 0
 	if len(leaves) > 0 {
 		prev := leaves[0]
 		noLeaves++
@@ -93,13 +67,12 @@ func testSearchMatch(
 	st *SuffixTree,
 	p string,
 	t *testing.T) {
-	for iter := st.Search(p); iter.HasMore(); {
-		i := iter.Next()
+	st.Search(p, func(i int) {
 		if st.String[i:i+len(p)] != p {
 			t.Errorf(`%s("%s"): While searching for "%s" I found "%s".`,
 				algo, ReplaceSentinel(st.String), p, ReplaceSentinel(st.String[i:]))
 		}
-	}
+	})
 }
 
 func testSearchMismatch(
@@ -108,11 +81,10 @@ func testSearchMismatch(
 	p string,
 	t *testing.T) {
 
-	iter := st.Search(p)
-	if iter.HasMore() {
+	st.Search(p, func(i int) {
 		t.Errorf(`We shouldn't find "%s" in %s("%s").`,
 			p, algo, ReplaceSentinel(st.String))
-	}
+	})
 }
 
 func testSearchMississippi(
@@ -226,17 +198,26 @@ func privateTraversal(n STNode) int {
 
 func visitorTraversal(n STNode) int {
 	res := 0
-	LeafIndicesVisitor(n,
+	LeafIndices(n,
 		func(idx int) { res += idx })
 	return res
 }
 
-func iteratorTraversal(n STNode) int {
-	res := 0
-	for iter := LeafIndicesIterator(n); iter.HasMore(); {
-		res += iter.Next()
+func TestTraversal(t *testing.T) {
+	seed := time.Now().UTC().UnixNano()
+	rng := rand.New(rand.NewSource(seed))
+	x := randomString(1000, "abcdefg", rng)
+	st := McCreight(x)
+
+	public := publicTraversal(st.Root)
+	private := privateTraversal(st.Root)
+	visitor := 0
+	LeafIndices(st.Root, func(i int) { visitor += i })
+
+	if public != private || public != visitor {
+		t.Errorf("The public/private/visitor traversal gave different resuls: %d/%d/%d",
+			public, private, visitor)
 	}
-	return res
 }
 
 func benchmarkTraversal(traversal func(STNode) int, b *testing.B) {
@@ -261,8 +242,4 @@ func BenchmarkPrivateTraversal(b *testing.B) {
 
 func BenchmarkVisitorTraversal(b *testing.B) {
 	benchmarkTraversal(visitorTraversal, b)
-}
-
-func BenchmarkIteratorTraversal(b *testing.B) {
-	benchmarkTraversal(iteratorTraversal, b)
 }

@@ -89,12 +89,9 @@ func Parent(n STNode) STNode {
 func Children(n STNode) []STNode {
 	switch v := n.(type) {
 	case *innerNode:
-		if v.sortedChildren == nil {
-			v.sortChildren()
-		}
-		return *v.sortedChildren
+		return v.getChildren()
 	default:
-		return []STNode{}
+		panic("You can only get children from an inner node")
 	}
 }
 
@@ -115,63 +112,17 @@ func EdgeLabel(n STNode, x string) string {
 	return castToShared(n).substr(x)
 }
 
-func LeafIndicesVisitor(n STNode, visitor func(int)) {
+func LeafIndices(n STNode, visitor func(int)) {
 	switch v := n.(type) {
 	case *leafNode:
 		visitor(v.leafIdx)
 	case *innerNode:
 		for _, child := range v.getChildren() {
-			LeafIndicesVisitor(child, visitor)
+			LeafIndices(child, visitor)
 		}
 	default:
 		panic("Unknown STNode type")
 	}
-}
-
-type LeafIndexIter struct {
-	stack []STNode
-}
-
-func (iter *LeafIndexIter) push(n STNode) {
-	iter.stack = append(iter.stack, n)
-}
-
-func (iter *LeafIndexIter) pop() STNode {
-	n := len(iter.stack) - 1
-	res := iter.stack[n]
-	iter.stack = iter.stack[:n]
-	return res
-}
-
-func (iter *LeafIndexIter) HasMore() bool {
-	return len(iter.stack) > 0
-}
-
-func (iter *LeafIndexIter) Next() int {
-	if !iter.HasMore() {
-		panic("You can't call Next() on an iterator that has reached the end.")
-	}
-	for {
-		switch n := iter.pop().(type) {
-		case *leafNode:
-			return n.leafIdx
-		case *innerNode:
-			children := n.getChildren()
-			for i := len(children) - 1; i >= 0; i-- {
-				iter.push(children[i])
-			}
-		default:
-			panic("Unknown STNode type")
-		}
-	}
-}
-
-func LeafIndicesIterator(n STNode) LeafIndexIter {
-	iter := LeafIndexIter{}
-	// Preallocate some stack space (but it will grow as needed)
-	iter.stack = make([]STNode, 1, 100)
-	iter.stack[0] = n
-	return iter
 }
 
 // Data both in inner STNodes and in leaf-STNodes
@@ -276,12 +227,11 @@ func (st *SuffixTree) ToDot(w io.Writer) {
 	fmt.Fprintln(w, "}")
 }
 
-func (st *SuffixTree) Search(p string) LeafIndexIter {
+// Search maps visitor through all the leaves in the subtree found by a search.
+func (st *SuffixTree) Search(p string, visitor func(int)) {
 	n, depth, y := sscan(st.Root, interval{0, len(p)}, st.String, p)
 	if depth == y.length() {
-		return LeafIndicesIterator(n)
-	} else {
-		return LeafIndexIter{}
+		LeafIndices(n, visitor)
 	}
 }
 
@@ -341,9 +291,6 @@ func sscan(n STNode, inter interval, x, y string) (STNode, int, interval) {
 }
 
 func breakEdge(n STNode, depth, leafidx int, y interval, x string) *leafNode {
-	if Parent(n) == nil {
-		panic("A node must have a parent when we break its edge.")
-	}
 	new_node := newInner(getInterval(n).prefix(depth))
 	Parent(n).(*innerNode).addChild(new_node, x)
 	new_leaf := newLeaf(leafidx, y)
@@ -362,9 +309,6 @@ func NaiveST(x string) SuffixTree {
 		if j == 0 {
 			// A mismatch when we try to leave a node
 			// means that it is an inner node
-			if y.length() == 0 {
-				panic("we managed to search to the end!")
-			}
 			v.(*innerNode).addChild(newLeaf(i, y), x)
 		} else {
 			breakEdge(v, j, i, y.chump(j), x)
@@ -443,10 +387,6 @@ func McCreight(x string) SuffixTree {
 		// This is the slow scan part, from ynode and the rest
 		// of the suffix, which is z.
 		n, depth, w := sscan(ynode, z, x, x)
-		if w.length() == 0 {
-			panic("w should not be empty")
-		}
-
 		if depth == 0 {
 			// Landed on a node
 			currLeaf = newLeaf(i, w)
