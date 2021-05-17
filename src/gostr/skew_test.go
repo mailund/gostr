@@ -37,11 +37,14 @@ func TestMississippiSkew(t *testing.T) {
 	x := "mississippi"
 	testSASorted(x, Skew(x), t)
 
+}
+
+func TestRandomStringsSkew(t *testing.T) {
 	seed := time.Now().UTC().UnixNano()
 	t.Logf("Random seed: %d", seed)
 	rng := rand.New(rand.NewSource(seed))
 
-	n := 10       // testing 10 random strings
+	n := 30       // testing 30 random strings, enough to hit all mod 3 lengths
 	maxlen := 100 // max length 100 (so we can still inspect them)
 	for i := 0; i < n; i++ {
 		slen := rng.Intn(maxlen)
@@ -49,5 +52,4 @@ func TestMississippiSkew(t *testing.T) {
 		t.Logf(`Testing string "%s".`, x)
 		testSASorted(x, Skew(x), t)
 	}
-
 }

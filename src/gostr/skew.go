@@ -63,17 +63,6 @@ func radix3(x []int, asize int, idx []int) []int {
 }
 
 func getSA12(x []int) []int {
-	/*
-			You can append to the slice here:
-		SA12 := []int{}
-		for i := 0; i < len(x); i++ {
-			if i%3 != 0 {
-				SA12 = append(SA12, i)
-			}
-		}
-			but that allocates extra space for the capacity
-			so preallocating is better.
-	*/
 	SA12 := make([]int, sa12len(len(x)))
 	for i, j := 0, 0; i < len(x); i++ {
 		if i%3 != 0 {
@@ -85,18 +74,6 @@ func getSA12(x []int) []int {
 }
 
 func getSA3(x, SA12 []int) []int {
-	/*You can append to the slice here:
-	SA3 := []int{}
-	if len(x)%3 == 1 {
-		SA3 = append(SA3, len(x)-1)
-	}
-	for _, i := range SA12 {
-		if i%3 == 1 {
-			SA3 = append(SA3, i-1)
-		}
-	}
-	but preallocating is better
-	*/
 	SA3 := make([]int, sa3len(len(x)))
 	k := 0
 	if len(x)%3 == 1 {
@@ -149,22 +126,6 @@ func merge(x []int, SA12 []int, SA3 []int) []int {
 	for i := 0; i < len(SA12); i++ {
 		ISA[SA12[i]] = i
 	}
-	/*
-			Using append:
-		SA := []int{}
-		i, j := 0, 0
-		for i < len(SA12) && j < len(SA3) {
-			if less(x, SA12[i], SA3[j], ISA) {
-				SA = append(SA, SA12[i])
-				i++
-			} else {
-				SA = append(SA, SA3[j])
-				j++
-			}
-		}
-		SA = append(SA, SA12[i:]...)
-		SA = append(SA, SA3[j:]...)
-	*/
 
 	SA := make([]int, len(SA12)+len(SA3))
 	i, j, k := 0, 0, 0
@@ -191,20 +152,7 @@ func merge(x []int, SA12 []int, SA3 []int) []int {
 }
 
 func buildU(x []int, alpha tripletMap) []int {
-	/*
-		With append:
-			u := []int{}
-			for i := 1; i < len(x); i += 3 {
-				u = append(u, alpha[trip(x, i)])
-			}
-			u = append(u, 1)
-			for i := 2; i < len(x); i += 3 {
-				u = append(u, alpha[trip(x, i)])
-			}
-	*/
-	// The length is len(SA12) which is len(x)-(len(x)/3 + 1)
-	// but then plus the central sentinel, so don't subtract the
-	// 1.
+	// The length is one longer than SA12 because of the middle sentinel
 	u := make([]int, sa12len(len(x))+1)
 	k := 0
 	for i := 1; i < len(x); i += 3 {
