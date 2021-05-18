@@ -36,7 +36,6 @@ func testSASorted(x string, sa []int, t *testing.T) {
 func TestMississippiSkew(t *testing.T) {
 	x := "mississippi"
 	testSASorted(x, Skew(x), t)
-
 }
 
 func TestRandomStringsSkew(t *testing.T) {
