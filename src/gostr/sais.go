@@ -73,8 +73,8 @@ func classifyS(isS *bitArray, x []int) {
 
 	// Otherwise, an index is S if the first letter is smaller
 	// or the first letters are the same and the next is S.
-	for i := len(x) - 1; i > 0; i-- {
-		isS.set(i-1, x[i-1] < x[i] || (x[i-1] == x[i] && isS.get(i)))
+	for i := len(x) - 2; i >= 0; i-- {
+		isS.set(i, x[i] < x[i+1] || (x[i] == x[i+1] && isS.get(i+1)))
 	}
 }
 
@@ -126,12 +126,12 @@ func bucketsEnd(ends, buckets []int) {
 	}
 }
 
-func insertFrontBucket(out []int, fronts []int, bucket, val int) {
+func insertBucketFront(out []int, fronts []int, bucket, val int) {
 	out[fronts[bucket]] = val
 	fronts[bucket]++
 }
 
-func insertEndBucket(out []int, ends []int, bucket, val int) {
+func insertBucketEnd(out []int, ends []int, bucket, val int) {
 	ends[bucket]--
 	out[ends[bucket]] = val
 }
@@ -153,7 +153,7 @@ func bucketLMS(
 	bucketsEnd(bucketEnds, buckets)
 	for i := len(x) - 1; i >= 0; i-- {
 		if isLMS(isS, i) {
-			insertEndBucket(SA, bucketEnds, x[i], i)
+			insertBucketEnd(SA, bucketEnds, x[i], i)
 		}
 	}
 }
@@ -167,7 +167,7 @@ func induceLS(x, SA, buckets, bucketEnds []int, isS *bitArray) {
 		}
 		j := SA[i] - 1
 		if !isS.get(j) {
-			insertFrontBucket(SA, bucketEnds, x[j], j)
+			insertBucketFront(SA, bucketEnds, x[j], j)
 		}
 	}
 
@@ -179,7 +179,7 @@ func induceLS(x, SA, buckets, bucketEnds []int, isS *bitArray) {
 		}
 		j := SA[i] - 1
 		if isS.get(j) {
-			insertEndBucket(SA, bucketEnds, x[j], j)
+			insertBucketEnd(SA, bucketEnds, x[j], j)
 		}
 	}
 }
@@ -272,7 +272,7 @@ func reverseLMSMap(
 	var j int
 	for i := len(reducedSA) - 1; i >= 0; i-- {
 		j, reducedSA[i] = reducedSA[i], undefined
-		insertEndBucket(SA, bucketEnds, x[j], j)
+		insertBucketEnd(SA, bucketEnds, x[j], j)
 	}
 }
 
