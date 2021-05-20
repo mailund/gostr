@@ -297,14 +297,14 @@ func recSAIS(x, SA []int, asize int, isS *bitArray) {
 
 	// Recursion
 	redX, redSA, redSize := reduceLMSString(x, SA, isS)
-	if redSize == len(redX) {
+	if redSize != len(redX) {
 		// Save some memory if we are going to recurse further
 		buckets = nil
 		bucketEnds = nil
 	}
 	recSAIS(redX, redSA, redSize, isS)
 	classifyS(isS, x) // Recompute S/L types for this function
-	if redSize == len(redX) {
+	if redSize != len(redX) {
 		// Restore the tables we need again now
 		buckets = countBuckets(x, asize)
 		bucketEnds = make([]int, len(buckets))
