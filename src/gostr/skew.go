@@ -216,7 +216,7 @@ func str2int(x string) []int {
 }
 
 // Skew builds the suffix array of a string using the skew algorithm.
-func Skew(x string) []int {
+func Skew(x string, includeSentinel bool) []int {
 	/*
 		Skew algorithm for a string."
 		The skew() function wants a list of integers,
@@ -225,5 +225,9 @@ func Skew(x string) []int {
 		of course it might not be. It is a simplification instead of
 		remapping the string.
 	*/
-	return skew(str2int(x), 256)
+	istring := str2int(x)
+	if includeSentinel {
+		istring = append(istring, 0)
+	}
+	return skew(istring, 256)
 }

@@ -207,25 +207,31 @@ func Test_recSAIS(t *testing.T) {
 
 func TestSAIS(t *testing.T) {
 	type args struct {
-		s string
+		s   string
+		inc bool
 	}
 	tests := []struct {
 		name   string
 		args   args
 		wantSA []int
 	}{
-		{`We handle empty strings`, args{""}, []int{}},
-		{`Unique characters "a"`, args{"a"}, []int{0}},
-		{`Unique characters "ab"`, args{"ab"}, []int{0, 1}},
-		{`Unique characters "ba"`, args{"ba"}, []int{1, 0}},
-		{`Unique characters "abc"`, args{"abc"}, []int{0, 1, 2}},
-		{`Unique characters "bca"`, args{"bca"}, []int{2, 0, 1}},
-		{`mississippi`, args{"mississippi"},
+		{`We handle empty strings`, args{"", false}, []int{}},
+		{`Unique characters "a"`, args{"a", false}, []int{0}},
+		{`Unique characters "a"`, args{"a", true}, []int{1, 0}},
+		{`Unique characters "ab"`, args{"ab", false}, []int{0, 1}},
+		{`Unique characters "ab"`, args{"ab", true}, []int{2, 0, 1}},
+		{`Unique characters "ba"`, args{"ba", false}, []int{1, 0}},
+		{`Unique characters "ba"`, args{"ba", true}, []int{2, 1, 0}},
+		{`Unique characters "abc"`, args{"abc", false}, []int{0, 1, 2}},
+		{`Unique characters "abc"`, args{"abc", true}, []int{3, 0, 1, 2}},
+		{`Unique characters "bca"`, args{"bca", false}, []int{2, 0, 1}},
+		{`Unique characters "bca"`, args{"bca", true}, []int{3, 2, 0, 1}},
+		{`mississippi`, args{"mississippi", false},
 			[]int{10, 7, 4, 1, 0, 9, 8, 6, 3, 5, 2}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotSA := SAIS(tt.args.s); !reflect.DeepEqual(gotSA, tt.wantSA) {
+			if gotSA := SAIS(tt.args.s, tt.args.inc); !reflect.DeepEqual(gotSA, tt.wantSA) {
 				t.Errorf("SAIS() = %v, want %v", gotSA, tt.wantSA)
 			}
 		})
@@ -234,7 +240,7 @@ func TestSAIS(t *testing.T) {
 
 func TestMississippiSAIS(t *testing.T) {
 	x := "mississippi"
-	testSASorted(x, SAIS(x), t)
+	testSASorted(x, SAIS(x, false), t)
 }
 
 func TestRandomStringsSAIS(t *testing.T) {
@@ -248,18 +254,18 @@ func TestRandomStringsSAIS(t *testing.T) {
 		slen := rng.Intn(maxlen)
 		x := randomString(slen, "acgt", rng)
 		t.Logf(`Testing string "%s".`, x)
-		testSASorted(x, SAIS(x), t)
+		testSASorted(x, SAIS(x, false), t)
 	}
 }
 
 func benchmarkSAconstruction(
-	constr func(string) []int,
+	constr func(string, bool) []int,
 	n int,
 	b *testing.B) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	for i := 0; i < b.N; i++ {
-		constr(randomString(n, "abcdefg", rng))
+		constr(randomString(n, "abcdefg", rng), false)
 	}
 }
 
@@ -284,4 +290,9 @@ func BenchmarkSAIS100000(b *testing.B) {
 
 func BenchmarkSAIS1000000(b *testing.B) {
 	benchmarkSAconstruction(SAIS, 1000000, b)
+}
+
+func Test_adccacacbbccdccdbccb(t *testing.T) {
+	x := "adccacacbbccdccdbccb"
+	testSASorted(x, SAIS(x, false), t)
 }

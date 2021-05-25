@@ -4,6 +4,14 @@ import (
 	"sort"
 )
 
+const sentinel = 0
+
+/* In this code, the suffix array is one longer than the string
+   because it includes the sentinel implicitly at index zero.
+   We need the sentinel with BWT to jump correctly in the search,
+   but we don't need to store it explicitly in the string.
+*/
+
 /*
    BwtIdx gives you the ith letter in the Burrows-Wheeler transform
    of a string. Use it if you want to know the BWT without making a
@@ -12,7 +20,7 @@ import (
 func BwtIdx(x string, sa []int, i int) byte {
 	j := sa[i]
 	if j == 0 {
-		return x[len(x)-1]
+		return sentinel
 	} else {
 		return x[j-1]
 	}
@@ -21,7 +29,7 @@ func BwtIdx(x string, sa []int, i int) byte {
 // Bwt gives you the Burrows-Wheeler transform of a string,
 // computed using the suffix array for the string.
 func Bwt(x string, sa []int) string {
-	bwt := make([]byte, len(x))
+	bwt := make([]byte, len(sa))
 	for i := 0; i < len(sa); i++ {
 		bwt[i] = BwtIdx(x, sa, i)
 	}
@@ -73,7 +81,7 @@ func Ctab(x string) CTAB {
 
 	// Then do the cumulative sum
 	cumsum := make(map[byte]int)
-	acc := 0
+	acc := 1 // we start at 1 bcs of sentinel
 	for _, a := range alpha {
 		cumsum[a] = acc
 		acc += counts[a]
@@ -105,12 +113,12 @@ func Otab(x string, sa []int, ctab CTAB) OTAB {
 
 	table := map[byte][]int{}
 	for _, a := range ctab.Alpha {
-		table[a] = make([]int, len(x))
+		table[a] = make([]int, len(sa))
 	}
 	table[bwt[0]][0] = 1
 
 	for _, a := range ctab.Alpha {
-		for i := 1; i < len(x); i++ {
+		for i := 1; i < len(sa); i++ {
 			table[a][i] = table[a][i-1]
 			if bwt[i] == a {
 				table[a][i]++
@@ -123,7 +131,7 @@ func Otab(x string, sa []int, ctab CTAB) OTAB {
 // BwtSearch finds all occurrences of p in x via a c-table
 // and an o-table.
 func BwtSearch(x, p string, ctab CTAB, otab OTAB) (int, int) {
-	L, R := 0, len(x)
+	L, R := 0, len(x)+1 // + 1 to get the range including the sentinel
 	for i := len(p) - 1; i >= 0; i-- {
 		a := p[i]
 		if !ctab.Contains(a) {
