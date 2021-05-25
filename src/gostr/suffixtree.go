@@ -192,6 +192,9 @@ func (n *innerNode) toDot(x string, w io.Writer) {
 			n.parent, n, ReplaceSentinel(n.edgeLabel(x)))
 		fmt.Fprintf(w, "\"%p\"[shape=point]\n", n)
 	}
+	if n.suffixLink != nil {
+		fmt.Fprintf(w, `"%p" -> "%p"[style=dotted, color=red];`, n, n.suffixLink)
+	}
 	for _, child := range n.children {
 		child.toDot(x, w)
 	}
@@ -222,7 +225,7 @@ type SuffixTree struct {
 }
 
 func (st *SuffixTree) ToDot(w io.Writer) {
-	fmt.Fprintln(w, "digraph {")
+	fmt.Fprintln(w, `digraph { rankdir="LR" `)
 	ToDot(st.Root, st.String, w)
 	fmt.Fprintln(w, "}")
 }
