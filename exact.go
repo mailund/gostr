@@ -31,13 +31,15 @@ func BorderSearch(x, p string, callback func(int)) {
 	ba := StrictBorderarray(p)
 	b := 0
 	for i := range x {
-		for ; b > 0 && p[b] != x[i]; b = ba[b-1] {
-		}
-
-		if p[b] == x[i] {
-			b++
-		} else {
-			b = 0
+		for {
+			if p[b] == x[i] {
+				b++
+				break
+			}
+			if b == 0 {
+				break
+			}
+			b = ba[b-1]
 		}
 
 		if b == len(p) {

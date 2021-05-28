@@ -4,12 +4,16 @@ func Borderarray(x string) []int {
 	ba := make([]int, len(x))
 	for i := 1; i < len(x); i++ {
 		b := ba[i-1]
-		for ; b > 0 && x[b] != x[i]; b = ba[b-1] {
-		}
-		if x[b] == x[i] {
-			ba[i] = b + 1
-		} else {
-			ba[i] = 0
+		for {
+			if x[b] == x[i] {
+				ba[i] = b + 1
+				break
+			}
+			if b == 0 {
+				ba[i] = 0
+				break
+			}
+			b = ba[b-1]
 		}
 	}
 	return ba
