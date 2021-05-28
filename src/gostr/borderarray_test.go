@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestBorderarray(t *testing.T) {
+func Test_Borderarray(t *testing.T) {
 	tests := []struct {
 		name string
 		x    string
@@ -25,7 +25,7 @@ func TestBorderarray(t *testing.T) {
 	}
 }
 
-func TestStrictBorderarray(t *testing.T) {
+func Test_StrictBorderarray(t *testing.T) {
 	tests := []struct {
 		name string
 		x string

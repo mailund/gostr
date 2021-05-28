@@ -198,20 +198,25 @@ func stWrapper(algo func(string) SuffixTree) func(x, p string, cb func(int)) {
 var naiveStWrapper = stWrapper(NaiveST)
 var mccreightWrapper = stWrapper(McCreight)
 
-func TestNaiveBasic(t *testing.T)     { basicExactTests("Naive", Naive, t) }
-func TestBwtBasic(t *testing.T)       { basicExactTests("BWT", bwtWrapper, t) }
-func TestNaiveSTBasic(t *testing.T)   { basicExactTests("NaiveST", naiveStWrapper, t) }
-func TestMcCreightBasic(t *testing.T) { basicExactTests("McCreight", mccreightWrapper, t) }
+func Test_NaiveBasic(t *testing.T)        { basicExactTests("Naive", Naive, t) }
+func Test_BorderSearchBasic(t *testing.T) { basicExactTests("BorderSearch", BorderSearch, t) }
+func Test_BwtBasic(t *testing.T)          { basicExactTests("BWT", bwtWrapper, t) }
+func Test_NaiveSTBasic(t *testing.T)      { basicExactTests("NaiveST", naiveStWrapper, t) }
+func Test_McCreightBasic(t *testing.T)    { basicExactTests("McCreight", mccreightWrapper, t) }
 
-func TestNaiveRandom(t *testing.T)     { testExactOccurrencesRandomStrings(Naive, t) }
-func TestBwtRandom(t *testing.T)       { testExactOccurrencesRandomStrings(bwtWrapper, t) }
-func TestNaiveSTRandom(t *testing.T)   { testExactOccurrencesRandomStrings(naiveStWrapper, t) }
-func TestMcCreightRandom(t *testing.T) { testExactOccurrencesRandomStrings(mccreightWrapper, t) }
+func Test_NaiveRandom(t *testing.T)        { testExactOccurrencesRandomStrings(Naive, t) }
+func Test_BorderSearchRandom(t *testing.T) { testExactOccurrencesRandomStrings(BorderSearch, t) }
+func Test_BwtRandom(t *testing.T)          { testExactOccurrencesRandomStrings(bwtWrapper, t) }
+func Test_NaiveSTRandom(t *testing.T)      { testExactOccurrencesRandomStrings(naiveStWrapper, t) }
+func Test_McCreightRandom(t *testing.T)    { testExactOccurrencesRandomStrings(mccreightWrapper, t) }
 
-func TestEqualRandomStrings_Naive_BWT(t *testing.T) { testEqualRandomStrings(Naive, bwtWrapper, t) }
-func TestEqualRandomStrings_Naive_NaiveST(t *testing.T) {
+func Test_EqualRandomStrings_Naive_BorderSearch(t *testing.T) {
+	testEqualRandomStrings(Naive, BorderSearch, t)
+}
+func Test_EqualRandomStrings_Naive_BWT(t *testing.T) { testEqualRandomStrings(Naive, bwtWrapper, t) }
+func Test_EqualRandomStrings_Naive_NaiveST(t *testing.T) {
 	testEqualRandomStrings(Naive, naiveStWrapper, t)
 }
-func TestEqualRandomStrings_Naive_McCreight(t *testing.T) {
+func Test_EqualRandomStrings_Naive_McCreight(t *testing.T) {
 	testEqualRandomStrings(Naive, mccreightWrapper, t)
 }

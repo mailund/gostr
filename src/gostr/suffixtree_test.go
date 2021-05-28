@@ -98,7 +98,7 @@ func testSearchMississippi(
 	testSearchMismatch(algo, st, "spi", t)
 }
 
-func TestNaiveConstruction(t *testing.T) {
+func Test_NaiveConstruction(t *testing.T) {
 
 	x := "mississippi"
 	st := testSuffixTree("NaiveST", NaiveST, x, t)
@@ -111,7 +111,7 @@ func TestNaiveConstruction(t *testing.T) {
 	f.Close()
 }
 
-func TestMcCreightConstruction(t *testing.T) {
+func Test_McCreightConstruction(t *testing.T) {
 
 	x := "mississippi"
 	st := testSuffixTree("McCreight", McCreight, x, t)
@@ -124,7 +124,7 @@ func TestMcCreightConstruction(t *testing.T) {
 	f.Close()
 }
 
-func TestSTRandomStrings(t *testing.T) {
+func Test_STRandomStrings(t *testing.T) {
 	algos := []string{"NaiveST", "McCreight"}
 	constructors := []func(string) SuffixTree{NaiveST, McCreight}
 

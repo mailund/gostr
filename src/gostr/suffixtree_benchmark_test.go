@@ -59,7 +59,7 @@ func visitorTraversal(n STNode) int {
 	return res
 }
 
-func TestTraversal(t *testing.T) {
+func Test_Traversal(t *testing.T) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	x := randomString(1000, "abcdefg", rng)

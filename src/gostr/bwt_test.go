@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func TestMississippiBWT(t *testing.T) {
+func Test_MississippiBWT(t *testing.T) {
 	x := "mississippi"
 	sa := Skew(x, true) // We must include the sentinel handle sentinel here
 	ctab := Ctab(x)
