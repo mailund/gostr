@@ -51,6 +51,20 @@ func randomString(n int, alpha string, rng *rand.Rand) string {
 	return string(runes)
 }
 
+func pickRandomPrefix(x string, rng *rand.Rand) string {
+	return x[:rng.Intn(len(x))]
+}
+
+func pickRandomSuffix(x string, rng *rand.Rand) string {
+	return x[rng.Intn(len(x)):]
+}
+
+func pickRandomSubstring(x string, rng *rand.Rand) string {
+	i := rng.Intn(len(x) - 1)
+	j := rng.Intn(len(x) - i)
+	return x[i : i+j]
+}
+
 func testRandomSASorted(
 	constr func(x string, senti bool) (sa []int),
 	t *testing.T) {

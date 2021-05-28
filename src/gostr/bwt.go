@@ -145,3 +145,15 @@ func BwtSearch(x, p string, ctab CTAB, otab OTAB) (int, int) {
 	}
 	return L, R
 }
+
+func BwtPreprocess(x string) func(p string, cb func(i int)) {
+	sa := Skew(x, true) // We must include the sentinel handle sentinel here
+	ctab := Ctab(x)
+	otab := Otab(x, sa, ctab)
+	return func(p string, cb func(i int)) {
+		L, R := BwtSearch(x, p, ctab, otab)
+		for i := L; i < R; i++ {
+			cb(sa[i])
+		}
+	}
+}

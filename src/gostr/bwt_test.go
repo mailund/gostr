@@ -14,4 +14,9 @@ func TestMississippiBWT(t *testing.T) {
 	for i := L; i < R; i++ {
 		testOccurrence(x, p, sa[i], t)
 	}
+
+	preproc := BwtPreprocess(x)
+	preproc(p, func(i int) {
+		testOccurrence(x, p, i, t)
+	})
 }
