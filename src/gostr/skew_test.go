@@ -1,12 +1,10 @@
 package gostr
 
 import (
-	"math/rand"
 	"testing"
-	"time"
 )
 
-func TestLengthCalculations(t *testing.T) {
+func Test_LengthCalculations(t *testing.T) {
 	n12, n3 := 0, 0
 	for lastIdx := 0; lastIdx < 100; lastIdx++ {
 		if lastIdx%3 == 0 {
@@ -24,31 +22,11 @@ func TestLengthCalculations(t *testing.T) {
 	}
 }
 
-func testSASorted(x string, sa []int, t *testing.T) {
-	for i := 1; i < len(sa); i++ {
-		if x[sa[i-1]:] >= x[sa[i]:] {
-			t.Errorf("Suffix array is not sorted! %q >= %q",
-				x[sa[i-1]:], x[sa[i]:])
-		}
-	}
-}
-
-func TestMississippiSkew(t *testing.T) {
+func Test_SkewMississippi(t *testing.T) {
 	x := "mississippi"
 	testSASorted(x, Skew(x, false), t)
 }
 
-func TestRandomStringsSkew(t *testing.T) {
-	seed := time.Now().UTC().UnixNano()
-	t.Logf("Random seed: %d", seed)
-	rng := rand.New(rand.NewSource(seed))
-
-	n := 30       // testing 30 random strings, enough to hit all mod 3 lengths
-	maxlen := 100 // max length 100 (so we can still inspect them)
-	for i := 0; i < n; i++ {
-		slen := rng.Intn(maxlen)
-		x := randomString(slen, "acgt", rng)
-		t.Logf(`Testing string "%s".`, x)
-		testSASorted(x, Skew(x, false), t)
-	}
+func Test_SkewRandomStrings(t *testing.T) {
+	testRandomSASorted(Skew, t)
 }

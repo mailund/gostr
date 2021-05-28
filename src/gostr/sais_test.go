@@ -1,38 +1,9 @@
 package gostr
 
 import (
-	"math/rand"
 	"reflect"
 	"testing"
-	"time"
 )
-
-func Test_remap(t *testing.T) {
-	type args struct {
-		s string
-	}
-	tests := []struct {
-		name      string
-		args      args
-		wantX     []int
-		wantAsize int
-	}{
-		{`Handles empty strings`, args{""}, []int{0}, 1},
-		{`Handles "abc"`, args{"abc"}, []int{1, 2, 3, 0}, 4},
-		{`Handles "abab"`, args{"abab"}, []int{1, 2, 1, 2, 0}, 3},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			gotX, gotAsize := remap(tt.args.s)
-			if !reflect.DeepEqual(gotX, tt.wantX) {
-				t.Errorf("remap() gotX = %v, want %v", gotX, tt.wantX)
-			}
-			if gotAsize != tt.wantAsize {
-				t.Errorf("remap() gotAsize = %v, want %v", gotAsize, tt.wantAsize)
-			}
-		})
-	}
-}
 
 func Test_newBitArray(t *testing.T) {
 	tests := []struct {
@@ -200,12 +171,12 @@ func Test_recSAIS(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			isS := newBitArray(len(tt.args.x))
-			recSAIS(tt.args.x, tt.args.SA, tt.args.asize, isS)
+			recSais(tt.args.x, tt.args.SA, tt.args.asize, isS)
 		})
 	}
 }
 
-func TestSAIS(t *testing.T) {
+func Test_SaisBasic(t *testing.T) {
 	type args struct {
 		s   string
 		inc bool
@@ -231,68 +202,18 @@ func TestSAIS(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotSA := SAIS(tt.args.s, tt.args.inc); !reflect.DeepEqual(gotSA, tt.wantSA) {
+			if gotSA := Sais(tt.args.s, tt.args.inc); !reflect.DeepEqual(gotSA, tt.wantSA) {
 				t.Errorf("SAIS() = %v, want %v", gotSA, tt.wantSA)
 			}
 		})
 	}
 }
 
-func TestMississippiSAIS(t *testing.T) {
+func Test_SaisMississippi(t *testing.T) {
 	x := "mississippi"
-	testSASorted(x, SAIS(x, false), t)
+	testSASorted(x, Sais(x, false), t)
 }
 
-func TestRandomStringsSAIS(t *testing.T) {
-	seed := time.Now().UTC().UnixNano()
-	t.Logf("Random seed: %d", seed)
-	rng := rand.New(rand.NewSource(seed))
-
-	n := 30       // testing 30 random strings, enough to hit all mod 3 lengths
-	maxlen := 100 // max length 100 (so we can still inspect them)
-	for i := 0; i < n; i++ {
-		slen := rng.Intn(maxlen)
-		x := randomString(slen, "acgt", rng)
-		t.Logf(`Testing string "%s".`, x)
-		testSASorted(x, SAIS(x, false), t)
-	}
-}
-
-func benchmarkSAconstruction(
-	constr func(string, bool) []int,
-	n int,
-	b *testing.B) {
-	seed := time.Now().UTC().UnixNano()
-	rng := rand.New(rand.NewSource(seed))
-	for i := 0; i < b.N; i++ {
-		constr(randomString(n, "abcdefg", rng), false)
-	}
-}
-
-func BenchmarkSkew10000(b *testing.B) {
-	benchmarkSAconstruction(Skew, 10000, b)
-}
-
-func BenchmarkSkew100000(b *testing.B) {
-	benchmarkSAconstruction(Skew, 100000, b)
-}
-
-func BenchmarkSkew1000000(b *testing.B) {
-	benchmarkSAconstruction(Skew, 1000000, b)
-}
-
-func BenchmarkSAIS10000(b *testing.B) {
-	benchmarkSAconstruction(SAIS, 10000, b)
-}
-func BenchmarkSAIS100000(b *testing.B) {
-	benchmarkSAconstruction(SAIS, 100000, b)
-}
-
-func BenchmarkSAIS1000000(b *testing.B) {
-	benchmarkSAconstruction(SAIS, 1000000, b)
-}
-
-func Test_adccacacbbccdccdbccb(t *testing.T) {
-	x := "adccacacbbccdccdbccb"
-	testSASorted(x, SAIS(x, false), t)
+func Test_SaisRandomStrings(t *testing.T) {
+	testRandomSASorted(Sais, t)
 }

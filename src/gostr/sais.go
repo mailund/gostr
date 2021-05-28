@@ -1,42 +1,5 @@
 package gostr
 
-import (
-	"sort"
-)
-
-func remap(s string) (x []int, asize int) {
-	// Identify the letters in the string
-	alpha := map[byte]int{}
-	for i := 0; i < len(s); i++ {
-		alpha[s[i]] = 1
-	}
-
-	// then sort those letters and assign them numbers
-	// respecting the original order
-	letters := make([]byte, len(alpha))
-	var i int = 0
-	for a := range alpha {
-		letters[i] = a
-		i++
-	}
-	sort.Slice(letters, func(i, j int) bool {
-		return letters[i] < letters[j]
-	})
-	for i, a := range letters {
-		alpha[a] = i + 1 // +1 to reserve zero for $
-	}
-
-	// Finally, output the string with the new alphabet
-	res := make([]int, len(s)+1) // +1 for $
-	for i := 0; i < len(s); i++ {
-		res[i] = alpha[s[i]]
-	}
-	// The last index is already zero (sentinel) from default
-	// int values.
-
-	return res, len(alpha) + 1
-}
-
 // Simple bit-array implementation...
 var (
 	mask = []byte{0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01}
@@ -276,7 +239,7 @@ func reverseLMSMap(
 	}
 }
 
-func recSAIS(x, SA []int, asize int, isS *bitArray) {
+func recSais(x, SA []int, asize int, isS *bitArray) {
 	// Base case of recursion: unique characters
 	if len(x) == asize {
 		for i, a := range x {
@@ -302,7 +265,7 @@ func recSAIS(x, SA []int, asize int, isS *bitArray) {
 		buckets = nil
 		bucketEnds = nil
 	}
-	recSAIS(redX, redSA, redSize, isS)
+	recSais(redX, redSA, redSize, isS)
 	classifyS(isS, x) // Recompute S/L types for this function
 	if redSize != len(redX) {
 		// Restore the tables we need again now
@@ -315,11 +278,11 @@ func recSAIS(x, SA []int, asize int, isS *bitArray) {
 	induceLS(x, SA, buckets, bucketEnds, isS)
 }
 
-func SAIS(s string, includeSentinel bool) (SA []int) {
-	x, asize := remap(s)
+func Sais(s string, includeSentinel bool) (SA []int) {
+	x, asize := Remap(s)
 	SA = make([]int, len(x))
 	isS := newBitArray(len(x))
-	recSAIS(x, SA, asize, isS)
+	recSais(x, SA, asize, isS)
 
 	// slicing away the sentinel that we no longer need
 	if includeSentinel {
