@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"gostr"
 	"os"
+
+	"github.com/mailund/gostr"
 )
 
 func main() {

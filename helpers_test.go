@@ -44,11 +44,19 @@ func testSASorted(x string, sa []int, t *testing.T) {
 }
 
 func randomString(n int, alpha string, rng *rand.Rand) string {
-	runes := make([]byte, n)
+	bytes := make([]byte, n)
 	for i := 0; i < n; i++ {
-		runes[i] = alpha[rng.Intn(len(alpha))]
+		bytes[i] = alpha[rng.Intn(len(alpha))]
 	}
-	return string(runes)
+	return string(bytes)
+}
+
+func equalString(n int) string {
+	bytes := make([]byte, n)
+	for i := 0; i < n; i++ {
+		bytes[i] = 'a'
+	}
+	return string(bytes)
 }
 
 func pickRandomPrefix(x string, rng *rand.Rand) string {

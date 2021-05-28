@@ -33,11 +33,13 @@ func BorderSearch(x, p string, callback func(int)) {
 	for i := range x {
 		for ; b > 0 && p[b] != x[i]; b = ba[b-1] {
 		}
+
 		if p[b] == x[i] {
 			b++
 		} else {
 			b = 0
 		}
+
 		if b == len(p) {
 			callback(i - len(p) + 1)
 			b = ba[b-1]
