@@ -1,17 +1,12 @@
 package gostr
 
-// Simple bit-array implementation...
-var (
-	mask = []byte{0x80, 0x40, 0x20, 0x10, 0x08, 0x04, 0x02, 0x01}
-)
-
 type bitArray struct {
 	length int
 	bytes  []byte
 }
 
 func newBitArray(size int, bits ...bool) *bitArray {
-	ba := bitArray{length: size, bytes: make([]byte, (size+1)/8+1)}
+	ba := bitArray{length: size, bytes: make([]byte, (size+8-1)/8)}
 	for i, b := range bits {
 		ba.set(i, b)
 	}
@@ -19,14 +14,14 @@ func newBitArray(size int, bits ...bool) *bitArray {
 }
 
 func (a *bitArray) get(i int) bool {
-	return (a.bytes[i/8] & mask[i%8]) != 0
+	return (a.bytes[i/8] & (1 << (i % 8))) != 0
 }
 
 func (a *bitArray) set(i int, b bool) {
 	if b {
-		a.bytes[i/8] = a.bytes[i/8] | mask[i%8]
+		a.bytes[i/8] = a.bytes[i/8] | (1 << (i % 8))
 	} else {
-		a.bytes[i/8] = a.bytes[(i)/8] & ^mask[(i)%8]
+		a.bytes[i/8] = a.bytes[(i)/8] & ^(1 << (i % 8))
 	}
 }
 
@@ -42,11 +37,7 @@ func classifyS(isS *bitArray, x []int) {
 }
 
 func isLMS(isS *bitArray, i int) bool {
-	if i == 0 {
-		return false
-	} else {
-		return isS.get(i) && !isS.get(i-1)
-	}
+	return (i != 0) && isS.get(i) && !isS.get(i-1)
 }
 
 func equalLMS(x []int, isS *bitArray, i, j int) bool {

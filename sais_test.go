@@ -30,6 +30,17 @@ func Test_newBitArray(t *testing.T) {
 			}
 		})
 	}
+	for i := 0; i < 67; i++ {
+		bv := newBitArray(i)
+		if 8*len(bv.bytes) < i {
+			t.Errorf("There are not enough bytes (%d) in the bit-array to hold %d bits.\n",
+				len(bv.bytes), i)
+		}
+		if i <= 8*(len(bv.bytes)-1) {
+			t.Errorf("There are too many bytes (%d) in the bit-array to hold %d bits.\n",
+				len(bv.bytes), i)
+		}
+	}
 }
 
 // These are tested through the newBitArray test for now...
