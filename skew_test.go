@@ -27,6 +27,22 @@ func Test_SkewMississippi(t *testing.T) {
 	testSASorted(x, Skew(x, false), t)
 }
 
+func allAs(n int) string {
+	bytes := make([]byte, n)
+	for i := range bytes {
+		bytes[i] = 'a'
+	}
+	return string(bytes)
+}
+
+func Test_as(t *testing.T) {
+	for n := 0; n < 10; n++ {
+		x := allAs(n)
+		testSASorted(x, Skew(x, false), t)
+		testSASorted(x, Skew(x, true), t)
+	}
+}
+
 func Test_SkewRandomStrings(t *testing.T) {
 	testRandomSASorted(Skew, t)
 }

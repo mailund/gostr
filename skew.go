@@ -101,7 +101,7 @@ func collectAlphabet(x []int, idx []int) tripletMap {
 	for _, i := range idx {
 		t := trip(x, i)
 		if _, ok := alpha[t]; !ok {
-			alpha[t] = len(alpha) + 2
+			alpha[t] = len(alpha) + 1 // + 1 for sentinel
 		}
 	}
 	return alpha
@@ -152,20 +152,16 @@ func merge(x []int, SA12 []int, SA3 []int) []int {
 }
 
 func buildU(x []int, alpha tripletMap) []int {
-	// The length is one longer than SA12 because of the middle sentinel
-	u := make([]int, sa12len(len(x))+1)
+	u := make([]int, sa12len(len(x)))
 	k := 0
 	for i := 1; i < len(x); i += 3 {
 		u[k] = alpha[trip(x, i)]
 		k++
 	}
-	u[k] = 1
-	k++
 	for i := 2; i < len(x); i += 3 {
 		u[k] = alpha[trip(x, i)]
 		k++
 	}
-
 	return u
 }
 
@@ -173,7 +169,7 @@ func uidx(i int, m int) int {
 	if i < m {
 		return 1 + 3*i
 	} else {
-		return 2 + 3*(i-m-1)
+		return 2 + 3*(i-m)
 	}
 }
 
@@ -192,15 +188,11 @@ func skew(x []int, asize int) []int {
 	if len(alpha) < len(SA12) {
 		// Build u and its SA.
 		u := buildU(x, alpha)
-		usa := skew(u, len(alpha)+2) // +2 for sentinels
+		usa := skew(u, len(alpha)+1) // +1 for sentinel
 		// Then map back to SA12 indices
-		m := len(usa) / 2
-		k := 0
-		for _, i := range usa {
-			if i != m {
-				SA12[k] = uidx(i, m)
-				k++
-			}
+		m := (len(u) + 1) / 2
+		for k, i := range usa {
+			SA12[k] = uidx(i, m)
 		}
 	}
 	SA3 := bucketSort(x, asize, getSA3(x, SA12), 0)
@@ -226,8 +218,16 @@ func Skew(x string, includeSentinel bool) []int {
 		remapping the string.
 	*/
 	istring := str2int(x)
+	/*
+		If we always add an explicit sentinel, the midpoint in u will always be
+		unique, and therefore we can avoid the central sentinel when we construct u.
+	*/
+	istring = append(istring, 0) // sentinel
+	sa := skew(istring, 256)
+
 	if includeSentinel {
-		istring = append(istring, 0)
+		return sa
+	} else {
+		return sa[1:]
 	}
-	return skew(istring, 256)
 }
