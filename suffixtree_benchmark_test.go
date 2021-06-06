@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/mailund/gostr/test"
 )
 
 func benchmarkConstruction(
@@ -12,7 +14,7 @@ func benchmarkConstruction(
 	n int) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
-	x := randomString(n, "abcdefg", rng)
+	x := test.RandomStringN(n, "abcdefg", rng)
 	for i := 0; i < b.N; i++ {
 		constructor(x)
 	}
@@ -62,7 +64,7 @@ func visitorTraversal(n STNode) int {
 func Test_Traversal(t *testing.T) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
-	x := randomString(1000, "abcdefg", rng)
+	x := test.RandomStringRange(500, 1000, "abcdefg", rng)
 	st := McCreight(x)
 
 	public := publicTraversal(st.Root)
@@ -79,7 +81,7 @@ func Test_Traversal(t *testing.T) {
 func benchmarkTraversal(traversal func(STNode) int, b *testing.B) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
-	x := randomString(1000, "abcdefg", rng)
+	x := test.RandomStringN(1000, "abcdefg", rng)
 	st := McCreight(x)
 	traversal(st.Root) // first traversal sorts the children...
 

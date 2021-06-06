@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"testing"
 	"time"
+
+	"github.com/mailund/gostr/test"
 )
 
 func benchmarkSAconstruction(
@@ -13,7 +15,7 @@ func benchmarkSAconstruction(
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	for i := 0; i < b.N; i++ {
-		constr(randomString(n, "abcdefg", rng), false)
+		constr(test.RandomStringN(n, "abcdefg", rng), false)
 	}
 }
 
@@ -42,5 +44,5 @@ func BenchmarkSais1000000(b *testing.B) {
 
 func Test_adccacacbbccdccdbccb(t *testing.T) {
 	x := "adccacacbbccdccdbccb"
-	testSASorted(x, Sais(x, false), t)
+	test.CheckSuffixArray(t, x, Sais(x, false))
 }

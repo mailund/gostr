@@ -2,6 +2,8 @@ package gostr
 
 import (
 	"testing"
+
+	"github.com/mailund/gostr/test"
 )
 
 func Test_LengthCalculations(t *testing.T) {
@@ -24,7 +26,7 @@ func Test_LengthCalculations(t *testing.T) {
 
 func Test_SkewMississippi(t *testing.T) {
 	x := "mississippi"
-	testSASorted(x, Skew(x, false), t)
+	test.CheckSuffixArray(t, x, Skew(x, false))
 }
 
 func allAs(n int) string {
@@ -38,8 +40,8 @@ func allAs(n int) string {
 func Test_as(t *testing.T) {
 	for n := 0; n < 10; n++ {
 		x := allAs(n)
-		testSASorted(x, Skew(x, false), t)
-		testSASorted(x, Skew(x, true), t)
+		test.CheckSuffixArray(t, x, Skew(x, false))
+		test.CheckSuffixArray(t, x, Skew(x, true))
 	}
 }
 

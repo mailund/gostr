@@ -3,6 +3,8 @@ package gostr
 import (
 	"reflect"
 	"testing"
+
+	"github.com/mailund/gostr/test"
 )
 
 func Test_newBitArray(t *testing.T) {
@@ -222,7 +224,7 @@ func Test_SaisBasic(t *testing.T) {
 
 func Test_SaisMississippi(t *testing.T) {
 	x := "mississippi"
-	testSASorted(x, Sais(x, false), t)
+	test.CheckSuffixArray(t, x, Sais(x, false))
 }
 
 func Test_SaisRandomStrings(t *testing.T) {

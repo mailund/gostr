@@ -2,6 +2,8 @@ package gostr
 
 import (
 	"testing"
+
+	"github.com/mailund/gostr/test"
 )
 
 func Test_MississippiBWT(t *testing.T) {
@@ -12,11 +14,11 @@ func Test_MississippiBWT(t *testing.T) {
 	p := "is"
 	L, R := BwtSearch(x, p, ctab, otab)
 	for i := L; i < R; i++ {
-		testOccurrence(x, p, sa[i], t)
+		test.CheckOccurrenceAt(t, x, p, sa[i])
 	}
 
 	preproc := BwtPreprocess(x)
 	preproc(p, func(i int) {
-		testOccurrence(x, p, i, t)
+		test.CheckOccurrenceAt(t, x, p, i)
 	})
 }

@@ -6,6 +6,8 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	"github.com/mailund/gostr/test"
 )
 
 func checkPathLabels(n STNode, algo string, st SuffixTree, t *testing.T) {
@@ -135,8 +137,7 @@ func Test_STRandomStrings(t *testing.T) {
 	n := 10       // testing 10 random strings
 	maxlen := 100 // max length 100 (so we can still inspect them)
 	for i := 0; i < n; i++ {
-		slen := rng.Intn(maxlen)
-		x := randomString(slen, "acgt", rng)
+		x := test.RandomStringRange(0, maxlen, "acgt", rng)
 		t.Logf(`Testing string "%s".`, x)
 		for i := range algos {
 			testSuffixTree(algos[i], constructors[i], x, t)

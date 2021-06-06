@@ -1,10 +1,10 @@
 package gostr
 
 import (
-	"math/rand"
 	"sort"
 	"testing"
-	"time"
+
+	"github.com/mailund/gostr/test"
 )
 
 func basicExactTests(
@@ -55,7 +55,7 @@ func basicExactTests(
 		t.Run(algoname+":"+tt.name, func(t *testing.T) {
 			exact(tt.args.x, tt.args.p, tt.args.callback)
 			sort.Ints(res)
-			if !equal_arrays(tt.expected, res) {
+			if !test.IntArraysEqual(tt.expected, res) {
 				t.Errorf("Searching for %s in %s and found %v (expected %v)\n",
 					tt.args.p, tt.args.x, res, tt.expected)
 			}
@@ -70,49 +70,46 @@ func testExactOccurrences(
 	t *testing.T) {
 
 	t.Logf(`Searching for "%s" in "%s"\n`, p, x)
-	algo(x, p, func(i int) { testOccurrence(x, p, i, t) })
+	algo(x, p, func(i int) { test.CheckOccurrenceAt(t, x, p, i) })
 }
 
 func testExactOccurrencesRandomStrings(
 	algo func(x, p string, cb func(int)),
 	t *testing.T) {
 
-	seed := time.Now().UTC().UnixNano()
-	t.Logf("Random seed: %d\n", seed)
-	rng := rand.New(rand.NewSource(seed))
+	rng := test.NewRandomSeed(t)
 
 	n := 100 // The length of the random strings
 	for i := 0; i < 10; i++ {
-		x := randomString(n, "abcdefg", rng)
+		x := test.RandomStringRange(10, 20, "abcdefg", rng)
 		t.Logf(`Random string is x = %s\n`, x)
 
 		t.Logf("Picking random patterns...\n")
-		for j := 0; j < 10; j++ {
-			// random patterns, they have a character that
+		for j := 0; j < 50; j++ {
+			// random patterns, they might have a character that
 			// doesn't exist in x, to make sure we test that
-			m := rng.Intn(len(x))
-			p := randomString(m, "abcdefgx", rng)
+			p := test.RandomStringRange(0, n, "abcdefgx", rng)
 			t.Logf(`Random pattern: "%s"\n`, p)
 			testExactOccurrences(x, p, algo, t)
 		}
 
 		t.Logf("Picking random prefixes...\n")
 		for j := 0; j < 10; j++ {
-			p := pickRandomPrefix(x, rng)
+			p := test.PickRandomPrefix(x, rng)
 			t.Logf(`Prefix: "%s"\n`, p)
 			testExactOccurrences(x, p, algo, t)
 		}
 
 		t.Logf("Picking random suffixes...\n")
 		for j := 0; j < 10; j++ {
-			p := pickRandomSuffix(x, rng)
+			p := test.PickRandomSuffix(x, rng)
 			t.Logf(`Sufix: "%s"\n`, p)
 			testExactOccurrences(x, p, algo, t)
 		}
 
 		t.Logf("Picking random substrings...\n")
 		for j := 0; j < 10; j++ {
-			p := pickRandomSubstring(x, rng)
+			p := test.PickRandomSubstring(x, rng)
 			t.Logf(`Substring: "%s"\n`, p)
 			testExactOccurrences(x, p, algo, t)
 		}
@@ -129,7 +126,7 @@ func testEqualResults(
 	algo2(x, p, func(i int) { res2 = append(res2, i) })
 	sort.Ints(res1)
 	sort.Ints(res2)
-	if !equal_arrays(res1, res2) {
+	if !test.IntArraysEqual(res1, res2) {
 		t.Errorf("Unequal results: %v %v\n", res1, res2)
 	}
 }
@@ -139,42 +136,39 @@ func testEqualRandomStrings(
 	algo2 func(x, p string, cb func(int)),
 	t *testing.T) {
 
-	seed := time.Now().UTC().UnixNano()
-	t.Logf("Random seed: %d\n", seed)
-	rng := rand.New(rand.NewSource(seed))
+	rng := test.NewRandomSeed(t)
 
-	n := 100 // The length of the random strings
+	n := 100 // The approximate length of the random strings
 	for i := 0; i < 10; i++ {
-		x := randomString(n, "abcdefg", rng)
+		x := test.RandomStringRange(n-10, n+10, "abcdefg", rng)
 		t.Logf(`Random string is x = %s\n`, x)
 
 		t.Logf("Picking random patterns...\n")
 		for j := 0; j < 10; j++ {
 			// random patterns, they have a character that
 			// doesn't exist in x, to make sure we test that
-			m := rng.Intn(len(x))
-			p := randomString(m, "abcdefgx", rng)
+			p := test.RandomStringRange(0, len(x), "abcdefgx", rng)
 			t.Logf(`Random pattern: "%s"\n`, p)
 			testEqualResults(x, p, algo1, algo2, t)
 		}
 
 		t.Logf("Picking random prefixes...\n")
 		for j := 0; j < 10; j++ {
-			p := pickRandomPrefix(x, rng)
+			p := test.PickRandomPrefix(x, rng)
 			t.Logf(`Prefix: "%s"\n`, p)
 			testEqualResults(x, p, algo1, algo2, t)
 		}
 
 		t.Logf("Picking random suffixes...\n")
 		for j := 0; j < 10; j++ {
-			p := pickRandomSuffix(x, rng)
+			p := test.PickRandomSuffix(x, rng)
 			t.Logf(`Sufix: "%s"\n`, p)
 			testEqualResults(x, p, algo1, algo2, t)
 		}
 
 		t.Logf("Picking random substrings...\n")
 		for j := 0; j < 10; j++ {
-			p := pickRandomSubstring(x, rng)
+			p := test.PickRandomSubstring(x, rng)
 			t.Logf(`Substring: "%s"\n`, p)
 			testEqualResults(x, p, algo1, algo2, t)
 		}

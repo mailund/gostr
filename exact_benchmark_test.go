@@ -1,9 +1,9 @@
 package gostr
 
 import (
-	"math/rand"
 	"testing"
-	"time"
+
+	"github.com/mailund/gostr/test"
 )
 
 func benchmarkExactSearchRandom(
@@ -11,12 +11,11 @@ func benchmarkExactSearchRandom(
 	algo func(x, p string, cb func(int)),
 	b *testing.B) {
 	b.StopTimer()
-	seed := time.Now().UTC().UnixNano()
-	rng := rand.New(rand.NewSource(seed))
+	rng := test.NewRandomSeed(b)
 	for i := 0; i < 10; i++ {
-		x := randomString(n, "abcdefg", rng)
+		x := test.RandomStringN(n, "abcdefg", rng)
 		for j := 0; j < 100; j++ {
-			p := pickRandomSubstring(x, rng)
+			p := test.PickRandomSubstring(x, rng)
 			b.StartTimer()
 			algo(x, p, func(int) {})
 			b.StopTimer()
@@ -29,12 +28,11 @@ func benchmarkExactSearchEqual(
 	algo func(x, p string, cb func(int)),
 	b *testing.B) {
 	b.StopTimer()
-	seed := time.Now().UTC().UnixNano()
-	rng := rand.New(rand.NewSource(seed))
+	rng := test.NewRandomSeed(b)
 	for i := 0; i < 10; i++ {
-		x := equalString(n)
+		x := test.SingletonString(n, 'a')
 		for j := 0; j < 100; j++ {
-			p := pickRandomSubstring(x, rng)
+			p := test.PickRandomSubstring(x, rng)
 			b.StartTimer()
 			algo(x, p, func(int) {})
 			b.StopTimer()
