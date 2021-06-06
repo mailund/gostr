@@ -269,16 +269,10 @@ func recSais(x, SA []int, asize int, isS *bitArray) {
 	induceLS(x, SA, buckets, bucketEnds, isS)
 }
 
-func Sais(s string, includeSentinel bool) (SA []int) {
+func Sais(s string) (SA []int) {
 	x, asize := Remap(s)
 	SA = make([]int, len(x))
 	isS := newBitArray(len(x))
 	recSais(x, SA, asize, isS)
-
-	// slicing away the sentinel that we no longer need
-	if includeSentinel {
-		return SA
-	} else {
-		return SA[1:]
-	}
+	return SA
 }

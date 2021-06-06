@@ -3,8 +3,6 @@ package gostr
 import (
 	"reflect"
 	"testing"
-
-	"github.com/mailund/gostr/test"
 )
 
 func Test_newBitArray(t *testing.T) {
@@ -187,46 +185,4 @@ func Test_recSAIS(t *testing.T) {
 			recSais(tt.args.x, tt.args.SA, tt.args.asize, isS)
 		})
 	}
-}
-
-func Test_SaisBasic(t *testing.T) {
-	type args struct {
-		s   string
-		inc bool
-	}
-	tests := []struct {
-		name   string
-		args   args
-		wantSA []int
-	}{
-		{`We handle empty strings`, args{"", false}, []int{}},
-		{`Unique characters "a"`, args{"a", false}, []int{0}},
-		{`Unique characters "a"`, args{"a", true}, []int{1, 0}},
-		{`Unique characters "ab"`, args{"ab", false}, []int{0, 1}},
-		{`Unique characters "ab"`, args{"ab", true}, []int{2, 0, 1}},
-		{`Unique characters "ba"`, args{"ba", false}, []int{1, 0}},
-		{`Unique characters "ba"`, args{"ba", true}, []int{2, 1, 0}},
-		{`Unique characters "abc"`, args{"abc", false}, []int{0, 1, 2}},
-		{`Unique characters "abc"`, args{"abc", true}, []int{3, 0, 1, 2}},
-		{`Unique characters "bca"`, args{"bca", false}, []int{2, 0, 1}},
-		{`Unique characters "bca"`, args{"bca", true}, []int{3, 2, 0, 1}},
-		{`mississippi`, args{"mississippi", false},
-			[]int{10, 7, 4, 1, 0, 9, 8, 6, 3, 5, 2}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if gotSA := Sais(tt.args.s, tt.args.inc); !reflect.DeepEqual(gotSA, tt.wantSA) {
-				t.Errorf("SAIS() = %v, want %v", gotSA, tt.wantSA)
-			}
-		})
-	}
-}
-
-func Test_SaisMississippi(t *testing.T) {
-	x := "mississippi"
-	test.CheckSuffixArray(t, x, Sais(x, false))
-}
-
-func Test_SaisRandomStrings(t *testing.T) {
-	testRandomSASorted(Sais, t)
 }

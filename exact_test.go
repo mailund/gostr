@@ -36,7 +36,7 @@ func stWrapper(algo func(string) gostr.SuffixTree) func(x, p string, cb func(int
 	}
 }
 
-var algorithms = map[string]exactAlgo{
+var exact_algorithms = map[string]exactAlgo{
 	"Naive":        gostr.Naive,
 	"BorderSearch": gostr.BorderSearch,
 	"BWT":          bwtWrapper,
@@ -94,7 +94,7 @@ func runBasicExactTests(algo exactAlgo) func(*testing.T) {
 }
 
 func TestBasicExact(t *testing.T) {
-	for name, algo := range algorithms {
+	for name, algo := range exact_algorithms {
 		t.Run(name, runBasicExactTests(algo))
 	}
 }
@@ -102,48 +102,18 @@ func TestBasicExact(t *testing.T) {
 func runRandomExactOccurencesTests(algo exactAlgo) func(*testing.T) {
 	return func(t *testing.T) {
 		rng := test.NewRandomSeed(t)
-
-		for i := 0; i < 10; i++ {
-			x := test.RandomStringRange(100, 200, "abcdefg", rng)
-			for j := 0; j < 50; j++ {
-				// random patterns, they might have a character that
-				// doesn't exist in x, to make sure we test that
-				p := test.RandomStringRange(0, len(x), "abcdefgx", rng)
+		test.GenerateTestStringsAndPatterns(100, 200, rng,
+			func(x, p string) {
 				hits := exactWrapper(algo)(x, p)
 				if !test.CheckAllOccurrences(t, x, p, hits) {
 					t.Fatalf("Incorrect results for x = %q and p = %q", x, p)
 				}
-			}
-
-			for j := 0; j < 10; j++ {
-				p := test.PickRandomPrefix(x, rng)
-				hits := exactWrapper(algo)(x, p)
-				if !test.CheckAllOccurrences(t, x, p, hits) {
-					t.Fatalf("Incorrect results for x = %q and p = %q", x, p)
-				}
-			}
-
-			for j := 0; j < 10; j++ {
-				p := test.PickRandomSuffix(x, rng)
-				hits := exactWrapper(algo)(x, p)
-				if !test.CheckAllOccurrences(t, x, p, hits) {
-					t.Fatalf("Incorrect results for x = %q and p = %q", x, p)
-				}
-			}
-
-			for j := 0; j < 10; j++ {
-				p := test.PickRandomSubstring(x, rng)
-				hits := exactWrapper(algo)(x, p)
-				if !test.CheckAllOccurrences(t, x, p, hits) {
-					t.Fatalf("Incorrect results for x = %q and p = %q", x, p)
-				}
-			}
-		}
+			})
 	}
 }
 
 func TestRandomExactOccurences(t *testing.T) {
-	for name, algo := range algorithms {
+	for name, algo := range exact_algorithms {
 		t.Run(name, runRandomExactOccurencesTests(algo))
 	}
 }
@@ -151,56 +121,21 @@ func TestRandomExactOccurences(t *testing.T) {
 func runCheckExactOccurencesEqual(expected exactAlgo, algo exactAlgo) func(*testing.T) {
 	return func(t *testing.T) {
 		rng := test.NewRandomSeed(t)
-
-		for i := 0; i < 10; i++ {
-			x := test.RandomStringRange(100, 200, "abcdefg", rng)
-			for j := 0; j < 50; j++ {
-				// random patterns, they might have a character that
-				// doesn't exist in x, to make sure we test that
-				p := test.RandomStringRange(0, len(x), "abcdefgx", rng)
+		test.GenerateTestStringsAndPatterns(100, 200, rng,
+			func(x, p string) {
 				expected_hits := exactWrapper(expected)(x, p)
 				hits := exactWrapper(algo)(x, p)
 				if !test.IntArraysEqual(expected_hits, hits) {
 					t.Fatalf("Expected and actual hits disagree %v vs %v",
 						expected_hits, hits)
 				}
-			}
-
-			for j := 0; j < 10; j++ {
-				p := test.PickRandomPrefix(x, rng)
-				expected_hits := exactWrapper(expected)(x, p)
-				hits := exactWrapper(algo)(x, p)
-				if !test.IntArraysEqual(expected_hits, hits) {
-					t.Fatalf("Expected and actual hits disagree %v vs %v",
-						expected_hits, hits)
-				}
-			}
-
-			for j := 0; j < 10; j++ {
-				p := test.PickRandomSuffix(x, rng)
-				expected_hits := exactWrapper(expected)(x, p)
-				hits := exactWrapper(algo)(x, p)
-				if !test.IntArraysEqual(expected_hits, hits) {
-					t.Fatalf("Expected and actual hits disagree %v vs %v",
-						expected_hits, hits)
-				}
-			}
-
-			for j := 0; j < 10; j++ {
-				p := test.PickRandomSubstring(x, rng)
-				expected_hits := exactWrapper(expected)(x, p)
-				hits := exactWrapper(algo)(x, p)
-				if !test.IntArraysEqual(expected_hits, hits) {
-					t.Fatalf("Expected and actual hits disagree %v vs %v",
-						expected_hits, hits)
-				}
-			}
-		}
+			})
 	}
 }
 
 func TestExactEqual(t *testing.T) {
-	for name, algo := range algorithms {
-		t.Run(name, runCheckExactOccurencesEqual(algorithms["Naive"], algo))
+	naive := exact_algorithms["Naive"]
+	for name, algo := range exact_algorithms {
+		t.Run(name, runCheckExactOccurencesEqual(naive, algo))
 	}
 }

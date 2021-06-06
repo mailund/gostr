@@ -1,21 +1,18 @@
 package gostr
 
 import (
-	"math/rand"
 	"testing"
-	"time"
 
 	"github.com/mailund/gostr/test"
 )
 
 func benchmarkSAconstruction(
-	constr func(string, bool) []int,
+	constr func(string) []int,
 	n int,
 	b *testing.B) {
-	seed := time.Now().UTC().UnixNano()
-	rng := rand.New(rand.NewSource(seed))
+	rng := test.NewRandomSeed(b)
 	for i := 0; i < b.N; i++ {
-		constr(test.RandomStringN(n, "abcdefg", rng), false)
+		constr(test.RandomStringN(n, "abcdefg", rng))
 	}
 }
 
@@ -40,9 +37,4 @@ func BenchmarkSais100000(b *testing.B) {
 
 func BenchmarkSais1000000(b *testing.B) {
 	benchmarkSAconstruction(Sais, 1000000, b)
-}
-
-func Test_adccacacbbccdccdbccb(t *testing.T) {
-	x := "adccacacbbccdccdbccb"
-	test.CheckSuffixArray(t, x, Sais(x, false))
 }

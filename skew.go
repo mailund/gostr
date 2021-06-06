@@ -208,7 +208,7 @@ func str2int(x string) []int {
 }
 
 // Skew builds the suffix array of a string using the skew algorithm.
-func Skew(x string, includeSentinel bool) []int {
+func Skew(x string) []int {
 	/*
 		Skew algorithm for a string."
 		The skew() function wants a list of integers,
@@ -223,11 +223,5 @@ func Skew(x string, includeSentinel bool) []int {
 		unique, and therefore we can avoid the central sentinel when we construct u.
 	*/
 	istring = append(istring, 0) // sentinel
-	sa := skew(istring, 256)
-
-	if includeSentinel {
-		return sa
-	} else {
-		return sa[1:]
-	}
+	return skew(istring, 256)
 }

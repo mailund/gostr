@@ -8,7 +8,7 @@ import (
 
 func Test_MississippiBWT(t *testing.T) {
 	x := "mississippi"
-	sa := Skew(x, true) // We must include the sentinel handle sentinel here
+	sa := Skew(x)
 	ctab := Ctab(x)
 	otab := Otab(x, sa, ctab)
 	p := "is"

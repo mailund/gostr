@@ -2,8 +2,6 @@ package gostr
 
 import (
 	"testing"
-
-	"github.com/mailund/gostr/test"
 )
 
 func Test_LengthCalculations(t *testing.T) {
@@ -22,29 +20,4 @@ func Test_LengthCalculations(t *testing.T) {
 			t.Errorf(`sa3len(%d) = %d (expected %d)`, n, sa3len(n), n3)
 		}
 	}
-}
-
-func Test_SkewMississippi(t *testing.T) {
-	x := "mississippi"
-	test.CheckSuffixArray(t, x, Skew(x, false))
-}
-
-func allAs(n int) string {
-	bytes := make([]byte, n)
-	for i := range bytes {
-		bytes[i] = 'a'
-	}
-	return string(bytes)
-}
-
-func Test_as(t *testing.T) {
-	for n := 0; n < 10; n++ {
-		x := allAs(n)
-		test.CheckSuffixArray(t, x, Skew(x, false))
-		test.CheckSuffixArray(t, x, Skew(x, true))
-	}
-}
-
-func Test_SkewRandomStrings(t *testing.T) {
-	testRandomSASorted(Skew, t)
 }
