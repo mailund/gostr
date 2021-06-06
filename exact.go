@@ -57,8 +57,8 @@ func Kmp(x, p string, callback func(int)) {
 	ba := StrictBorderarray(p)
 	var i int = 0
 	var j int = 0
-	for {
-		// Match up...
+	for i < len(x) {
+		// Match...
 		for i < len(x) && j < len(p) && x[i] == p[j] {
 			i++
 			j++
@@ -66,9 +66,6 @@ func Kmp(x, p string, callback func(int)) {
 		// Report...
 		if j == len(p) {
 			callback(i - len(p))
-		}
-		if i == len(x) {
-			break // We are done
 		}
 		// Shift pattern...
 		if j == 0 {
