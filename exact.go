@@ -72,14 +72,16 @@ func Kmp(x, p string, callback func(int)) {
 		}
 		// Shift pattern down...
 		if j > 0 {
-			for j = ba[j-1]; j > 0 && x[i] != p[j]; {
-				j = ba[j-1]
-			}
+			// We know we had a mismatch at j,
+			// so if it isn't index zero, we shift down
+			j = ba[j-1]
 		}
-		// And increment if we can't find a hit at
-		// index zero after shifting.
-		if j == 0 && x[i] != p[j] {
-			i++
+		for x[i] != p[j] {
+			if j == 0 {
+				i++
+				break
+			}
+			j = ba[j-1]
 		}
 	}
 }
