@@ -48,3 +48,38 @@ func BorderSearch(x, p string, callback func(int)) {
 		}
 	}
 }
+
+func Kmp(x, p string, callback func(int)) {
+	if len(p) == 0 {
+		reportEmptyMatches(x, callback)
+		return
+	}
+	ba := StrictBorderarray(p)
+	var i int = 0
+	var j int = 0
+	for {
+		// Match up...
+		for i < len(x) && j < len(p) && x[i] == p[j] {
+			i++
+			j++
+		}
+		// Report...
+		if j == len(p) {
+			callback(i - len(p))
+		}
+		if i == len(x) {
+			break // We are done
+		}
+		// Shift pattern down...
+		if j > 0 {
+			for j = ba[j-1]; j > 0 && x[i] != p[j]; {
+				j = ba[j-1]
+			}
+		}
+		// And increment if we can't find a hit at
+		// index zero after shifting.
+		if j == 0 && x[i] != p[j] {
+			i++
+		}
+	}
+}

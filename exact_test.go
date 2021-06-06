@@ -39,6 +39,7 @@ func stWrapper(algo func(string) gostr.SuffixTree) func(x, p string, cb func(int
 var exact_algorithms = map[string]exactAlgo{
 	"Naive":        gostr.Naive,
 	"BorderSearch": gostr.BorderSearch,
+	"KMP":          gostr.Kmp,
 	"BWT":          bwtWrapper,
 	"ST-Naive":     stWrapper(gostr.NaiveST),
 	"ST-McCreight": stWrapper(gostr.McCreight),
