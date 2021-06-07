@@ -75,3 +75,27 @@ func Kmp(x, p string, callback func(int)) {
 		}
 	}
 }
+
+func Bmh(x, p string, callback func(int)) {
+	if len(p) == 0 {
+		reportEmptyMatches(x, callback)
+		return
+	}
+	// There are 256 bytes, so that is what we use...
+	jump := make([]int, 256)
+	for b := 0; b < len(jump); b++ {
+		jump[b] = len(p)
+	}
+	for j := 0; j < len(p)-1; j++ {
+		jump[p[j]] = len(p) - j - 1
+	}
+
+	for i := 0; i < len(x)-len(p)+1; i += jump[x[i+len(p)-1]] {
+		for j := len(p) - 1; x[i+j] == p[j]; j-- {
+			if j == 0 {
+				callback(i)
+				break
+			}
+		}
+	}
+}

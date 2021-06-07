@@ -40,6 +40,7 @@ var exact_algorithms = map[string]exactAlgo{
 	"Naive":        gostr.Naive,
 	"BorderSearch": gostr.BorderSearch,
 	"KMP":          gostr.Kmp,
+	"BMH":          gostr.Bmh,
 	"BWT":          bwtWrapper,
 	"ST-Naive":     stWrapper(gostr.NaiveST),
 	"ST-McCreight": stWrapper(gostr.McCreight),

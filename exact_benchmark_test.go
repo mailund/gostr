@@ -40,15 +40,22 @@ func benchmarkExactSearchEqual(
 	}
 }
 func Benchmark_ExactSearch_Random_Naive(b *testing.B) {
-	benchmarkExactSearchRandom(10000, 100, Naive, b)
+	benchmarkExactSearchRandom(1000, 100, Naive, b)
 }
 func Benchmark_ExactSearch_Equal_Naive(b *testing.B) {
-	benchmarkExactSearchEqual(10000, 100, Naive, b)
+	benchmarkExactSearchEqual(1000, 100, Naive, b)
 }
 
 func Benchmark_ExactSearch_Random_BorderSearch(b *testing.B) {
-	benchmarkExactSearchRandom(10000, 100, BorderSearch, b)
+	benchmarkExactSearchRandom(1000, 100, BorderSearch, b)
 }
 func Benchmark_ExactSearch_Equal_BorderSearch(b *testing.B) {
-	benchmarkExactSearchEqual(10000, 100, BorderSearch, b)
+	benchmarkExactSearchEqual(1000, 100, BorderSearch, b)
+}
+
+func Benchmark_ExactSearch_Random_Bmh(b *testing.B) {
+	benchmarkExactSearchRandom(1000, 100, Bmh, b)
+}
+func Benchmark_ExactSearch_Equal_Bmh(b *testing.B) {
+	benchmarkExactSearchEqual(1000, 100, Bmh, b)
 }

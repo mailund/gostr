@@ -8,7 +8,9 @@ import (
 
 func NewRandomSeed(tb testing.TB) *rand.Rand {
 	seed := time.Now().UTC().UnixNano()
-	tb.Logf("Random seed: %d", seed)
+	// maybe enable this again if it is useful,
+	// but right now I don't want it in the benchmarks
+	//tb.Logf("Random seed: %d", seed)
 	return rand.New(rand.NewSource(seed))
 }
 
