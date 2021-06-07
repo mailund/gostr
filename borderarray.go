@@ -21,16 +21,10 @@ func Borderarray(x string) []int {
 
 func StrictBorderarray(x string) []int {
 	ba := Borderarray(x)
-	strict := make([]int, len(x))
-	for i := 0; i < len(x); i++ {
-		// I'm handling the last index inside the loop
-		// so I don't have to deal with empty strings
-		// outside of the loop.
-		if i == len(x)-1 || x[ba[i]] != x[i+1] {
-			strict[i] = ba[i]
-		} else {
-			strict[i] = strict[ba[i]]
+	for i := 1; i < len(x)-1; i++ {
+		if ba[i] > 0 && x[ba[i]] == x[i+1] {
+			ba[i] = ba[ba[i]-1]
 		}
 	}
-	return strict
+	return ba
 }
