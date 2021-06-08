@@ -33,6 +33,10 @@ func Benchmark_ExactSearchRandomStrings(b *testing.B) {
 	}
 }
 
-func Benchmark_BMH_10000(b *testing.B) {
-	runExactBenchmarkRandom(gostr.Bmh, 10000)(b)
+func Benchmark_BMH_100000(b *testing.B) {
+	runExactBenchmarkRandom(gostr.Bmh, 100000)(b)
+}
+
+func Benchmark_BMH_map_100000(b *testing.B) {
+	runExactBenchmarkRandom(gostr.Bmh_map, 100000)(b)
 }

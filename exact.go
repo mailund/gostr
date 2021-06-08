@@ -99,3 +99,32 @@ func Bmh(x, p string, callback func(int)) {
 		}
 	}
 }
+
+// This is here to show the difference between using
+// a map and an array, both in code and in time...
+func Bmh_map(x, p string, callback func(int)) {
+	if len(p) == 0 {
+		reportEmptyMatches(x, callback)
+		return
+	}
+
+	jump_tbl := map[byte]int{}
+	for j := 0; j < len(p)-1; j++ {
+		jump_tbl[p[j]] = len(p) - j - 1
+	}
+
+	for i := 0; i < len(x)-len(p)+1; {
+		for j := len(p) - 1; x[i+j] == p[j]; j-- {
+			if j == 0 {
+				callback(i)
+				break
+			}
+		}
+
+		if jmp, ok := jump_tbl[x[i+len(p)-1]]; ok {
+			i += jmp
+		} else {
+			i += len(p)
+		}
+	}
+}
