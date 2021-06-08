@@ -1,20 +1,19 @@
-package gostr
+package gostr_test
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/mailund/gostr"
 	"github.com/mailund/gostr/test"
 )
 
-func benchmarkExactSearchRandom(
-	n, m int,
-	algo func(x, p string, cb func(int)),
-	b *testing.B) {
-	b.StopTimer()
-	rng := test.NewRandomSeed(b)
-	for i := 0; i < 10; i++ {
-		x := test.RandomStringN(n, "abcdefg", rng)
-		for j := 0; j < 100; j++ {
+func runExactBenchmarkRandom(algo exactAlgo, n int) func(*testing.B) {
+	return func(b *testing.B) {
+		b.StopTimer()
+		rng := test.NewRandomSeed(b)
+		for i := 0; i < 5; i++ {
+			x := test.RandomStringN(n, "abcde", rng)
 			p := test.PickRandomSubstring(x, rng)
 			b.StartTimer()
 			algo(x, p, func(int) {})
@@ -23,39 +22,17 @@ func benchmarkExactSearchRandom(
 	}
 }
 
-func benchmarkExactSearchEqual(
-	n, m int,
-	algo func(x, p string, cb func(int)),
-	b *testing.B) {
+func Benchmark_ExactSearchRandomStrings(b *testing.B) {
 	b.StopTimer()
-	rng := test.NewRandomSeed(b)
-	for i := 0; i < 10; i++ {
-		x := test.SingletonString(n, 'a')
-		for j := 0; j < 100; j++ {
-			p := test.PickRandomSubstring(x, rng)
-			b.StartTimer()
-			algo(x, p, func(int) {})
-			b.StopTimer()
+	ns := []int{5000, 10000}
+	for name, algo := range exact_algorithms {
+		for _, n := range ns {
+			b.Run(fmt.Sprintf("%s:n=%d", name, n),
+				runExactBenchmarkRandom(algo, n))
 		}
 	}
 }
-func Benchmark_ExactSearch_Random_Naive(b *testing.B) {
-	benchmarkExactSearchRandom(1000, 100, Naive, b)
-}
-func Benchmark_ExactSearch_Equal_Naive(b *testing.B) {
-	benchmarkExactSearchEqual(1000, 100, Naive, b)
-}
 
-func Benchmark_ExactSearch_Random_BorderSearch(b *testing.B) {
-	benchmarkExactSearchRandom(1000, 100, BorderSearch, b)
-}
-func Benchmark_ExactSearch_Equal_BorderSearch(b *testing.B) {
-	benchmarkExactSearchEqual(1000, 100, BorderSearch, b)
-}
-
-func Benchmark_ExactSearch_Random_Bmh(b *testing.B) {
-	benchmarkExactSearchRandom(1000, 100, Bmh, b)
-}
-func Benchmark_ExactSearch_Equal_Bmh(b *testing.B) {
-	benchmarkExactSearchEqual(1000, 100, Bmh, b)
+func Benchmark_BMH_10000(b *testing.B) {
+	runExactBenchmarkRandom(gostr.Bmh, 10000)(b)
 }
