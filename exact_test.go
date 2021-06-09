@@ -43,6 +43,7 @@ var exact_algorithms = map[string]exactAlgo{
 	"KMP":          gostr.Kmp,
 	"BMH":          gostr.Bmh,
 	"BMH-map":      gostr.Bmh_map,
+	"BMH-String":   gostr.Bmh_String,
 	"BWT":          bwtWrapper,
 	"ST-Naive":     stWrapper(gostr.NaiveST),
 	"ST-McCreight": stWrapper(gostr.McCreight),
@@ -146,4 +147,9 @@ func TestExactEqual(t *testing.T) {
 	for name, algo := range exact_algorithms {
 		t.Run(name, runCheckExactOccurencesEqual(naive, algo))
 	}
+}
+
+func Test_FOO(t *testing.T) {
+	runBasicExactTests(gostr.Bmh_map)
+	runBasicExactTests(gostr.Bmh_String)
 }

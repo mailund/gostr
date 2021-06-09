@@ -128,3 +128,40 @@ func Bmh_map(x, p string, callback func(int)) {
 		}
 	}
 }
+
+// And here's a version that uses Strings
+func Bmh_String(x_, p_ string, callback func(int)) {
+	if len(p_) == 0 {
+		reportEmptyMatches(x_, callback)
+		return
+	}
+
+	x, _ := NewString(x_, nil)
+	p, err := NewString(p_, x.Alpha)
+	if err != nil {
+		// We can't map, so we can't match
+		return
+	}
+
+	// Don't include the sentinels in the lenghts
+	xlen := x.Length() - 1
+	plen := p.Length() - 1
+
+	jump_tbl := make([]int, x.Alpha.Size())
+	for j := range jump_tbl {
+		jump_tbl[j] = plen
+	}
+	for j := 0; j < plen-1; j++ {
+		jump_tbl[p.At(j)] = plen - j - 1
+	}
+
+	for i := 0; i < xlen-plen+1; {
+		for j := plen - 1; x.At(i+j) == p.At(j); j-- {
+			if j == 0 {
+				callback(i)
+				break
+			}
+		}
+		i += jump_tbl[x.At(i+plen-1)]
+	}
+}
