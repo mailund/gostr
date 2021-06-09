@@ -269,10 +269,9 @@ func recSais(x, SA []int, asize int, isS *bitArray) {
 	induceLS(x, SA, buckets, bucketEnds, isS)
 }
 
-func Sais(s string) (SA []int) {
-	x, asize := Remap(s)
-	SA = make([]int, len(x))
-	isS := newBitArray(len(x))
-	recSais(x, SA, asize, isS)
+func Sais(x *String) (SA []int) {
+	SA = make([]int, x.Length())
+	isS := newBitArray(x.Length())
+	recSais(x.ToInts(), SA, x.Alpha.Size(), isS)
 	return SA
 }

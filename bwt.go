@@ -146,12 +146,13 @@ func BwtSearch(x, p string, ctab CTAB, otab OTAB) (int, int) {
 	return L, R
 }
 
-func BwtPreprocess(x string) func(p string, cb func(i int)) {
+func BwtPreprocess(x *String) func(p string, cb func(i int)) {
+	x_ := x.ToGoString() // FIXME
 	sa := Sais(x)
-	ctab := Ctab(x)
-	otab := Otab(x, sa, ctab)
+	ctab := Ctab(x_)
+	otab := Otab(x_, sa, ctab)
 	return func(p string, cb func(i int)) {
-		L, R := BwtSearch(x, p, ctab, otab)
+		L, R := BwtSearch(x_, p, ctab, otab)
 		for i := L; i < R; i++ {
 			cb(sa[i])
 		}

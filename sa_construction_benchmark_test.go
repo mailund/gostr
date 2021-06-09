@@ -7,12 +7,14 @@ import (
 )
 
 func benchmarkSAconstruction(
-	constr func(string) []int,
+	constr func(*String) []int,
 	n int,
 	b *testing.B) {
 	rng := test.NewRandomSeed(b)
 	for i := 0; i < b.N; i++ {
-		constr(test.RandomStringN(n, "abcdefg", rng))
+		s := test.RandomStringN(n, "abcdefg", rng)
+		x, _ := NewString(s, nil)
+		constr(x)
 	}
 }
 

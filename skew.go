@@ -199,29 +199,7 @@ func skew(x []int, asize int) []int {
 	return merge(x, SA12, SA3)
 }
 
-func str2int(x string) []int {
-	out := make([]int, len(x))
-	for i, c := range x {
-		out[i] = int(c)
-	}
-	return out
-}
-
-// Skew builds the suffix array of a string using the skew algorithm.
-func Skew(x string) []int {
-	/*
-		Skew algorithm for a string."
-		The skew() function wants a list of integers,
-		so we convert the string in the first call.
-		I am assuming that the alphabet size is 256 here, although
-		of course it might not be. It is a simplification instead of
-		remapping the string.
-	*/
-	istring := str2int(x)
-	/*
-		If we always add an explicit sentinel, the midpoint in u will always be
-		unique, and therefore we can avoid the central sentinel when we construct u.
-	*/
-	istring = append(istring, 0) // sentinel
-	return skew(istring, 256)
+// Skew builds the suffix array of a String using the skew algorithm.
+func Skew(x *String) []int {
+	return skew(x.ToInts(), x.Alpha.Size())
 }
