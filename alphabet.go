@@ -33,6 +33,10 @@ func (alpha *Alphabet) Size() int {
 	return alpha.size
 }
 
+func (alpha *Alphabet) Contains(a byte) bool {
+	return a == 0 || alpha._map[a] != 0
+}
+
 func (alpha *Alphabet) Map(x string) ([]byte, error) {
 	out := make([]byte, len(x)+1) // for convinience we always include sentinel
 	for i := 0; i < len(x); i++ {

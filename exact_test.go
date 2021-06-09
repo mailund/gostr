@@ -25,8 +25,7 @@ func exactWrapper(algo exactAlgo) exactFunc {
 // Give BWT search the same interface as the other exact search
 // algorithms
 func bwtWrapper(x, p string, cb func(int)) {
-	x_, _ := gostr.NewString(x, nil) // FIXME
-	gostr.BwtPreprocess(x_)(p, cb)
+	gostr.BwtPreprocessGoString(x)(p, cb)
 }
 
 // Same for suffix trees...
@@ -147,9 +146,4 @@ func TestExactEqual(t *testing.T) {
 	for name, algo := range exact_algorithms {
 		t.Run(name, runCheckExactOccurencesEqual(naive, algo))
 	}
-}
-
-func Test_FOO(t *testing.T) {
-	runBasicExactTests(gostr.Bmh_map)
-	runBasicExactTests(gostr.Bmh_String)
 }

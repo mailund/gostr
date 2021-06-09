@@ -44,3 +44,7 @@ func Benchmark_BMH_map_100000(b *testing.B) {
 func Benchmark_BMH_String_100000(b *testing.B) {
 	runExactBenchmarkRandom(gostr.Bmh_String, 100000)(b)
 }
+
+func Benchmark_BWT_100000(b *testing.B) {
+	runExactBenchmarkRandom(bwtWrapper, 100000)(b)
+}
