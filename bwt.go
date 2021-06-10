@@ -110,7 +110,8 @@ func Otab(x *String, sa []int, ctab *CTAB) *OTAB {
 
 	// The character at the beginning of bwt gets a count
 	// of one at row one.
-	otab.set(int(BwtIdx(x, sa, 0)), 1, 1)
+	a := int(BwtIdx(x, sa, 0))
+	otab.set(a, 1, 1)
 
 	// The remaining entries either copies or increment from
 	// the previous column. We count a from 1 to alpha size
