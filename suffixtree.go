@@ -70,14 +70,14 @@ func (n STNode) Inner() *InnerNode {
 	return (*InnerNode)(n.ptr)
 }
 
-func refLeaf(n *LeafNode) STNode {
+func wrapLeaf(n *LeafNode) STNode {
 	return STNode{
 		NodeType: Leaf,
 		ptr:      unsafe.Pointer(n),
 	}
 }
 
-func refInner(n *InnerNode) STNode {
+func wrapInner(n *InnerNode) STNode {
 	return STNode{
 		NodeType: Inner,
 		ptr:      unsafe.Pointer(n),
@@ -166,14 +166,14 @@ func (st *SuffixTree) newLeaf(idx int, r Range) STNode {
 	leaf := LeafNode{
 		SharedNode: SharedNode{Range: r},
 		Index:      idx}
-	return refLeaf(&leaf)
+	return wrapLeaf(&leaf)
 }
 
 func (st *SuffixTree) newInner(r Range) STNode {
 	node := InnerNode{
 		SharedNode: SharedNode{Range: r},
 		Children:   make([]STNode, st.Alpha.Size())}
-	return refInner(&node)
+	return wrapInner(&node)
 }
 
 func (st *SuffixTree) breakEdge(n STNode, depth, leafidx int, y Range, x []byte) STNode {
@@ -318,7 +318,7 @@ func McCreight(x_ string) SuffixTree {
 		if p.SuffixLink != nil {
 			// We don't need y here, just z and ynode
 			z = currLeaf.Shared().suffix()
-			ynode = refInner(p.SuffixLink)
+			ynode = wrapInner(p.SuffixLink)
 
 		} else {
 			pp := p.Parent
@@ -326,7 +326,7 @@ func McCreight(x_ string) SuffixTree {
 			y = p.suffix()
 			z = currLeaf.Shared().Range
 
-			ynode, depth, _ = fscan(refInner(pp.SuffixLink), y, x)
+			ynode, depth, _ = fscan(wrapInner(pp.SuffixLink), y, x)
 			if depth < ynode.Shared().Range.length() {
 				// ended on an edge
 				currLeaf = st.breakEdge(ynode, depth, i, z, x)
