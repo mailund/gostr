@@ -37,9 +37,16 @@ func checkAlphabet(
 		t.Fatalf("We expected the mapped string to be %v but it is %v", expected_mapped, y)
 	}
 
-	z := alpha.RevmapBytes(y)
+	z := alpha.RevmapBytesStripSentinel(y)
 	if !reflect.DeepEqual(x, z) {
 		t.Fatalf(`Mapping back we expected "%s" but got "%s"`, x, z)
+	}
+	zz := alpha.RevmapBytes(y)
+	if !reflect.DeepEqual(zz[:len(z)], z) {
+		t.Fatalf(`Strings "%s" and "%s" should be equal`, z, zz)
+	}
+	if zz[len(z)] != 0 {
+		t.Fatalf(`The last character in "%s" should be sentinel`, zz)
 	}
 
 	expected_ints := make([]int, len(expected_mapped))
@@ -52,11 +59,6 @@ func checkAlphabet(
 	}
 	if !reflect.DeepEqual(yy, expected_ints) {
 		t.Fatalf("We expected the mapped string to be %v but it is %v", expected_mapped, y)
-	}
-
-	zz := alpha.RevmapInts(yy)
-	if !reflect.DeepEqual(x, zz) {
-		t.Fatalf(`Mapping back we expected "%s" but got "%s"`, x, zz)
 	}
 }
 

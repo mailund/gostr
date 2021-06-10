@@ -34,7 +34,9 @@ func publicTraversal(n STNode) int {
 	} else {
 		val := 0
 		for _, child := range Children(n) {
-			val += publicTraversal(child)
+			if child != nil {
+				val += publicTraversal(child)
+			}
 		}
 		return val
 	}
@@ -42,12 +44,14 @@ func publicTraversal(n STNode) int {
 
 func privateTraversal(n STNode) int {
 	switch v := n.(type) {
-	case *leafNode:
+	case *LeafNode:
 		return v.leafIdx
-	case *innerNode:
+	case *InnerNode:
 		val := 0
-		for _, child := range v.getChildren() {
-			val += privateTraversal(child)
+		for _, child := range v.children {
+			if child != nil {
+				val += privateTraversal(child)
+			}
 		}
 		return val
 	}
@@ -65,7 +69,7 @@ func Test_Traversal(t *testing.T) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	x := test.RandomStringRange(500, 1000, "abcdefg", rng)
-	st := McCreight(x)
+	st := NaiveST(x)
 
 	public := publicTraversal(st.Root)
 	private := privateTraversal(st.Root)
@@ -82,7 +86,7 @@ func benchmarkTraversal(traversal func(STNode) int, b *testing.B) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	x := test.RandomStringN(1000, "abcdefg", rng)
-	st := McCreight(x)
+	st := NaiveST(x)
 	traversal(st.Root) // first traversal sorts the children...
 
 	b.ResetTimer()

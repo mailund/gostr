@@ -10,19 +10,22 @@ import (
 	"github.com/mailund/gostr/test"
 )
 
-func checkPathLabels(n STNode, algo string, st SuffixTree, t *testing.T) {
+func checkPathLabels(n STNode, algo string,
+	st SuffixTree, t *testing.T) {
 	switch v := n.(type) {
-	case *innerNode:
+	case *InnerNode:
 		for _, child := range v.children {
-			checkPathLabels(child, algo, st, t)
+			if child != nil {
+				checkPathLabels(child, algo, st, t)
+			}
 		}
-	case *leafNode:
-		if PathLabel(v, st.String) != st.String[v.leafIdx:] {
+	case *LeafNode:
+		if PathLabel(v, st.String, st.Alpha) != string(st.Alpha.RevmapBytes(st.String[v.leafIdx:])) {
 			t.Errorf(`%s(%s): the path label of leaf %d should be "%s" but is "%s"`,
 				algo,
-				ReplaceSentinel(st.String), v.leafIdx,
-				ReplaceSentinel(st.String[v.leafIdx:]),
-				ReplaceSentinel(PathLabel(v, st.String)))
+				ReplaceSentinelBytes(st.String, st.Alpha), v.leafIdx,
+				ReplaceSentinelBytes(st.String[v.leafIdx:], st.Alpha),
+				ReplaceSentinelString(PathLabel(v, st.String, st.Alpha)))
 		}
 	}
 }
@@ -46,10 +49,10 @@ func testSuffixTree(
 		prev := leaves[0]
 		noLeaves++
 		for i := 1; i < len(leaves); i++ {
-			if st.String[prev:] >= st.String[leaves[i]:] {
+			if string(st.String[prev:]) >= string(st.String[leaves[i]:]) {
 				t.Errorf(`We got the leaf "%s" before leaf "%s" in %s("%s").`,
-					ReplaceSentinel(st.String[prev:]),
-					ReplaceSentinel(st.String[leaves[i]:]),
+					ReplaceSentinelBytes(st.String[prev:], st.Alpha),
+					ReplaceSentinelBytes(st.String[leaves[i]:], st.Alpha),
 					algo, x)
 			}
 			noLeaves++
@@ -72,9 +75,10 @@ func testSearchMatch(
 	p string,
 	t *testing.T) {
 	st.Search(p, func(i int) {
-		if st.String[i:i+len(p)] != p {
+		hit := st.Alpha.RevmapBytes(st.String[i : i+len(p)])
+		if hit != p {
 			t.Errorf(`%s("%s"): While searching for "%s" I found "%s".`,
-				algo, ReplaceSentinel(st.String), p, ReplaceSentinel(st.String[i:]))
+				algo, ReplaceSentinelBytes(st.String, st.Alpha), p, ReplaceSentinelBytes(st.String[i:], st.Alpha))
 		}
 	})
 }
@@ -87,7 +91,7 @@ func testSearchMismatch(
 
 	st.Search(p, func(i int) {
 		t.Errorf(`We shouldn't find "%s" in %s("%s").`,
-			p, algo, ReplaceSentinel(st.String))
+			p, algo, ReplaceSentinelBytes(st.String, st.Alpha))
 	})
 }
 

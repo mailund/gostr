@@ -77,9 +77,9 @@ func (alpha *Alphabet) MapToIntsWithSentinel(x string) ([]int, error) {
 	return alpha.mapInts(x, make([]int, len(x)+1))
 }
 
-func (alpha *Alphabet) RevmapBytes(x []byte) string {
+func (alpha *Alphabet) revmapBytes(x []byte, strip_sentinel bool) string {
 	strip := 0 // If we have a sentinel, we remove it again
-	if len(x) > 0 && x[len(x)-1] == 0 {
+	if strip_sentinel && len(x) > 0 && x[len(x)-1] == 0 {
 		strip++
 	}
 	out := make([]byte, len(x)-strip)
@@ -90,15 +90,10 @@ func (alpha *Alphabet) RevmapBytes(x []byte) string {
 	return string(out)
 }
 
-func (alpha *Alphabet) RevmapInts(x []int) string {
-	strip := 0 // If we have a sentinel, we remove it again
-	if len(x) > 0 && x[len(x)-1] == 0 {
-		strip++
-	}
-	out := make([]byte, len(x)-strip)
-	for i := 0; i < len(out); i++ {
-		b := alpha._revmap[x[i]]
-		out[i] = b
-	}
-	return string(out)
+func (alpha *Alphabet) RevmapBytes(x []byte) string {
+	return alpha.revmapBytes(x, false)
+}
+
+func (alpha *Alphabet) RevmapBytesStripSentinel(x []byte) string {
+	return alpha.revmapBytes(x, true)
 }
