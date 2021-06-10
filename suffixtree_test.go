@@ -19,9 +19,9 @@ func checkPathLabels(
 		if n.PathLabel(st.String, st.Alpha) != string(st.Alpha.RevmapBytes(st.String[v.Index:])) {
 			t.Errorf(`%s(%s): the path label of leaf %d should be "%s" but is "%s"`,
 				algo,
-				ReplaceSentinelBytes(st.String, st.Alpha), v.Index,
-				ReplaceSentinelBytes(st.String[v.Index:], st.Alpha),
-				ReplaceSentinelString(n.PathLabel(st.String, st.Alpha)))
+				ReplaceSentinel(st.Alpha.RevmapBytes(st.String)), v.Index,
+				ReplaceSentinel(st.Alpha.RevmapBytes(st.String[v.Index:])),
+				ReplaceSentinel(n.PathLabel(st.String, st.Alpha)))
 		}
 
 	case Inner:
@@ -53,8 +53,8 @@ func testSuffixTree(
 		for i := 1; i < len(leaves); i++ {
 			if string(st.String[prev:]) >= string(st.String[leaves[i]:]) {
 				t.Errorf(`We got the leaf "%s" before leaf "%s" in %s("%s").`,
-					ReplaceSentinelBytes(st.String[prev:], st.Alpha),
-					ReplaceSentinelBytes(st.String[leaves[i]:], st.Alpha),
+					ReplaceSentinel(st.Alpha.RevmapBytes(st.String[prev:])),
+					ReplaceSentinel(st.Alpha.RevmapBytes(st.String[leaves[i]:])),
 					algo, x)
 			}
 			noLeaves++
@@ -80,7 +80,8 @@ func testSearchMatch(
 		hit := st.Alpha.RevmapBytes(st.String[i : i+len(p)])
 		if hit != p {
 			t.Errorf(`%s("%s"): While searching for "%s" I found "%s".`,
-				algo, ReplaceSentinelBytes(st.String, st.Alpha), p, ReplaceSentinelBytes(st.String[i:], st.Alpha))
+				algo, ReplaceSentinel(st.Alpha.RevmapBytes(st.String)),
+				p, ReplaceSentinel(st.Alpha.RevmapBytes(st.String[i:])))
 		}
 	})
 }
@@ -93,7 +94,7 @@ func testSearchMismatch(
 
 	st.Search(p, func(i int) {
 		t.Errorf(`We shouldn't find "%s" in %s("%s").`,
-			p, algo, ReplaceSentinelBytes(st.String, st.Alpha))
+			p, algo, ReplaceSentinel(st.Alpha.RevmapBytes(st.String)))
 	})
 }
 
