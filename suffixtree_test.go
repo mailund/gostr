@@ -10,22 +10,25 @@ import (
 	"github.com/mailund/gostr/test"
 )
 
-func checkPathLabels(n STNode, algo string,
+func checkPathLabels(
+	n STNodeRef, algo string,
 	st SuffixTree, t *testing.T) {
-	switch v := n.(type) {
-	case *InnerNode:
-		for _, child := range v.children {
-			if child != nil {
-				checkPathLabels(child, algo, st, t)
-			}
-		}
-	case *LeafNode:
-		if PathLabel(v, st.String, st.Alpha) != string(st.Alpha.RevmapBytes(st.String[v.leafIdx:])) {
+	switch n.NodeType {
+	case Leaf:
+		v := n.Leaf
+		if n.PathLabel(st.String, st.Alpha) != string(st.Alpha.RevmapBytes(st.String[v.Index:])) {
 			t.Errorf(`%s(%s): the path label of leaf %d should be "%s" but is "%s"`,
 				algo,
-				ReplaceSentinelBytes(st.String, st.Alpha), v.leafIdx,
-				ReplaceSentinelBytes(st.String[v.leafIdx:], st.Alpha),
-				ReplaceSentinelString(PathLabel(v, st.String, st.Alpha)))
+				ReplaceSentinelBytes(st.String, st.Alpha), v.Index,
+				ReplaceSentinelBytes(st.String[v.Index:], st.Alpha),
+				ReplaceSentinelString(n.PathLabel(st.String, st.Alpha)))
+		}
+
+	case Inner:
+		for _, child := range n.Inner.Children {
+			if child.NodeType != UnInitialised {
+				checkPathLabels(child, algo, st, t)
+			}
 		}
 	}
 }
@@ -38,8 +41,7 @@ func testSuffixTree(
 	st := construction(x)
 
 	leaves := []int{}
-	LeafIndices(
-		st.Root,
+	st.Root.LeafIndices(
 		func(idx int) {
 			leaves = append(leaves, idx)
 		})

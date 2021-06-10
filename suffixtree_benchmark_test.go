@@ -28,40 +28,25 @@ func BenchmarkMcCreight10000(b *testing.B)   { benchmarkConstruction(b, McCreigh
 func BenchmarkMcCreight100000(b *testing.B)  { benchmarkConstruction(b, McCreight, 100000) }
 func BenchmarkMcCreight1000000(b *testing.B) { benchmarkConstruction(b, McCreight, 1000000) }
 
-func publicTraversal(n STNode) int {
-	if IsLeaf(n) {
-		return LeafIndex(n)
-	} else {
+func publicTraversal(n STNodeRef) int {
+	switch n.NodeType {
+	case Leaf:
+		return n.Leaf.Index
+	case Inner:
 		val := 0
-		for _, child := range Children(n) {
-			if child != nil {
+		for _, child := range n.Inner.Children {
+			if child.NodeType != UnInitialised {
 				val += publicTraversal(child)
 			}
 		}
 		return val
 	}
+	return 0 // Unreachable, but we need to return...
 }
 
-func privateTraversal(n STNode) int {
-	switch v := n.(type) {
-	case *LeafNode:
-		return v.leafIdx
-	case *InnerNode:
-		val := 0
-		for _, child := range v.children {
-			if child != nil {
-				val += privateTraversal(child)
-			}
-		}
-		return val
-	}
-	return -1
-}
-
-func visitorTraversal(n STNode) int {
+func visitorTraversal(n STNodeRef) int {
 	res := 0
-	LeafIndices(n,
-		func(idx int) { res += idx })
+	n.LeafIndices(func(idx int) { res += idx })
 	return res
 }
 
@@ -72,17 +57,16 @@ func Test_Traversal(t *testing.T) {
 	st := NaiveST(x)
 
 	public := publicTraversal(st.Root)
-	private := privateTraversal(st.Root)
 	visitor := 0
-	LeafIndices(st.Root, func(i int) { visitor += i })
+	st.Root.LeafIndices(func(i int) { visitor += i })
 
-	if public != private || public != visitor {
-		t.Errorf("The public/private/visitor traversal gave different resuls: %d/%d/%d",
-			public, private, visitor)
+	if public != visitor {
+		t.Errorf("The public/visitor traversal gave different resuls: %d/%d",
+			public, visitor)
 	}
 }
 
-func benchmarkTraversal(traversal func(STNode) int, b *testing.B) {
+func benchmarkTraversal(traversal func(STNodeRef) int, b *testing.B) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	x := test.RandomStringN(1000, "abcdefg", rng)
@@ -97,9 +81,6 @@ func benchmarkTraversal(traversal func(STNode) int, b *testing.B) {
 
 func BenchmarkPublicTraversal(b *testing.B) {
 	benchmarkTraversal(publicTraversal, b)
-}
-func BenchmarkPrivateTraversal(b *testing.B) {
-	benchmarkTraversal(privateTraversal, b)
 }
 
 func BenchmarkVisitorTraversal(b *testing.B) {
