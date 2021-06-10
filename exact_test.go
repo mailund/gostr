@@ -25,7 +25,7 @@ func exactWrapper(algo exactAlgo) exactFunc {
 // Give BWT search the same interface as the other exact search
 // algorithms
 func bwtWrapper(x, p string, cb func(int)) {
-	gostr.BwtPreprocessGoString(x)(p, cb)
+	gostr.BwtPreprocess(x)(p, cb)
 }
 
 // Same for suffix trees...
@@ -41,8 +41,8 @@ var exact_algorithms = map[string]exactAlgo{
 	"BorderSearch": gostr.BorderSearch,
 	"KMP":          gostr.Kmp,
 	"BMH":          gostr.Bmh,
-	"BMH-map":      gostr.Bmh_map,
-	"BMH-String":   gostr.Bmh_String,
+	"BMH-map":      gostr.BmhWithMap,
+	"BMH-String":   gostr.BmhWithAlphabet,
 	"BWT":          bwtWrapper,
 	"ST-Naive":     stWrapper(gostr.NaiveST),
 	"ST-McCreight": stWrapper(gostr.McCreight),

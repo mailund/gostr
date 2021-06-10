@@ -5,8 +5,10 @@ import (
 	"testing"
 )
 
-func checkAlphabet(t *testing.T, x string,
+func checkAlphabet(
+	t *testing.T, x string,
 	letters []byte, expected_mapped []byte) {
+
 	alpha := NewAlphabet(x)
 	if alpha.Size() != len(letters)+1 { // +1 for sentinel
 		t.Fatalf("Expected size %d, got %d", len(letters)+1, alpha.Size())
@@ -27,7 +29,7 @@ func checkAlphabet(t *testing.T, x string,
 		}
 	}
 
-	y, err := alpha.Map(x)
+	y, err := alpha.MapToBytesWithSentinel(x)
 	if err != nil {
 		t.Fatalf("Error mapping string %s", x)
 	}
@@ -35,9 +37,26 @@ func checkAlphabet(t *testing.T, x string,
 		t.Fatalf("We expected the mapped string to be %v but it is %v", expected_mapped, y)
 	}
 
-	z := alpha.Revmap(y)
+	z := alpha.RevmapBytes(y)
 	if !reflect.DeepEqual(x, z) {
 		t.Fatalf(`Mapping back we expected "%s" but got "%s"`, x, z)
+	}
+
+	expected_ints := make([]int, len(expected_mapped))
+	for i, b := range expected_mapped {
+		expected_ints[i] = int(b)
+	}
+	yy, err2 := alpha.MapToIntsWithSentinel(x)
+	if err2 != nil {
+		t.Fatalf("Error mapping string %s", x)
+	}
+	if !reflect.DeepEqual(yy, expected_ints) {
+		t.Fatalf("We expected the mapped string to be %v but it is %v", expected_mapped, y)
+	}
+
+	zz := alpha.RevmapInts(yy)
+	if !reflect.DeepEqual(x, zz) {
+		t.Fatalf(`Mapping back we expected "%s" but got "%s"`, x, zz)
 	}
 }
 
@@ -53,32 +72,16 @@ func Test_Alphabet(t *testing.T) {
 
 	// See what happens if we try to map a string with the wrong alphabet.
 	alpha := NewAlphabet("foo")
-	if _, err := alpha.Map("foobar"); err == nil {
+	if _, err := alpha.MapToBytes("foobar"); err == nil {
 		t.Fatalf("Expected an error when mapping to an alphabet that doesn't match")
 	}
-}
-
-func Test_Strings(t *testing.T) {
-	x, _ := NewString("foobar", nil)
-	y, err := NewString("foo", x.Alpha)
-	if err != nil {
-		t.Fatal(err)
+	if _, err := alpha.MapToBytesWithSentinel("foobar"); err == nil {
+		t.Fatalf("Expected an error when mapping to an alphabet that doesn't match")
 	}
-	for i := 0; i < y.Length()-1; i++ { // -1 for sentinel
-		if x.At(i) != y.At(i) {
-			t.Fatalf("Expected %d and %d to be equal", x.At(i), y.At(i))
-		}
+	if _, err := alpha.MapToInts("foobar"); err == nil {
+		t.Fatalf("Expected an error when mapping to an alphabet that doesn't match")
 	}
-
-	if x.ToGoString() != "foobar" {
-		t.Fatalf(`Expected "%s" but got "%s"`, "foobar", x.ToGoString())
-	}
-	if y.ToGoString() != "foo" {
-		t.Fatalf(`Expected "%s" but got "%s"`, "foo", y.ToGoString())
-	}
-
-	_, err = NewString("qux", x.Alpha)
-	if err == nil {
-		t.Fatal("Expected an error")
+	if _, err := alpha.MapToIntsWithSentinel("foobar"); err == nil {
+		t.Fatalf("Expected an error when mapping to an alphabet that doesn't match")
 	}
 }

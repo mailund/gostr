@@ -8,12 +8,11 @@ import (
 )
 
 func Test_Ctab(t *testing.T) {
-	x, _ := NewString("aab", nil)
-	ctab := Ctab(x)
-	if x.Alpha != ctab.Alpha {
-		t.Fatal("x and ctab should have the same alphabet")
-	}
-	if len(ctab.CumSum) != ctab.Alpha.Size() {
+	x := "aab"
+	alpha := NewAlphabet(x)
+	x_, _ := alpha.MapToBytesWithSentinel(x)
+	ctab := NewCTab(x_, alpha)
+	if len(ctab.CumSum) != alpha.Size() {
 		t.Fatal("The ctable's cumsum has the wrong length")
 	}
 	if !reflect.DeepEqual(ctab.CumSum, []int{0, 1, 3}) {
@@ -22,12 +21,15 @@ func Test_Ctab(t *testing.T) {
 }
 
 func Test_Otab(t *testing.T) {
-	x, _ := NewString("aab", nil)
-	sa := Sais(x)
-	ctab := Ctab(x)
-	otab := Otab(x, sa, ctab)
+	x := "aab"
+	alpha := NewAlphabet(x)
+	sa := SaisWithAlphabet(x, alpha)
 
-	bwt := BwtString(x, sa)
+	x_, _ := alpha.MapToBytesWithSentinel(x)
+	ctab := NewCTab(x_, alpha)
+	otab := NewOTab(x_, sa, ctab, alpha)
+
+	bwt := BwtString(x_, sa)
 	expected_bwt := string([]byte{2, 0, 1, 1})
 	if !reflect.DeepEqual(bwt, expected_bwt) {
 		t.Fatalf("Expected bwt %v, got %v", expected_bwt, bwt)
@@ -43,17 +45,20 @@ func Test_Otab(t *testing.T) {
 func Test_MississippiBWT(t *testing.T) {
 	x_ := "mississippi"
 	p_ := "is"
-	x, _ := NewString(x_, nil)
-	p, _ := NewString(p_, x.Alpha)
-	sa := Skew(x)
-	ctab := Ctab(x)
-	otab := Otab(x, sa, ctab)
+	alpha := NewAlphabet(x_)
+	x, _ := alpha.MapToBytesWithSentinel(x_)
+	p, _ := alpha.MapToBytes(p_)
+
+	sa := SkewWithAlphabet(x_, alpha)
+	ctab := NewCTab(x, alpha)
+	otab := NewOTab(x, sa, ctab, alpha)
+
 	L, R := BwtSearch(x, p, ctab, otab)
 	for i := L; i < R; i++ {
 		test.CheckOccurrenceAt(t, x_, p_, sa[i])
 	}
 
-	preproc := BwtPreprocess(x)
+	preproc := BwtPreprocess(x_)
 	preproc(p_, func(i int) {
 		test.CheckOccurrenceAt(t, x_, p_, i)
 	})

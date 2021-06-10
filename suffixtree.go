@@ -402,3 +402,12 @@ func McCreight(x string) SuffixTree {
 	}
 	return SuffixTree{x, root}
 }
+
+/*
+func (st *SuffixTree) computeSuffixAndLcpArray() ([]int, []int) {
+	sa := make([]int, len(st.String))
+	lcp := make([]int, len(st.String))
+	// FIXME
+	return sa, lcp
+}
+*/

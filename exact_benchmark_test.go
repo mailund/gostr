@@ -38,11 +38,11 @@ func Benchmark_BMH_100000(b *testing.B) {
 }
 
 func Benchmark_BMH_map_100000(b *testing.B) {
-	runExactBenchmarkRandom(gostr.Bmh_map, 100000)(b)
+	runExactBenchmarkRandom(gostr.BmhWithMap, 100000)(b)
 }
 
 func Benchmark_BMH_String_100000(b *testing.B) {
-	runExactBenchmarkRandom(gostr.Bmh_String, 100000)(b)
+	runExactBenchmarkRandom(gostr.BmhWithAlphabet, 100000)(b)
 }
 
 func Benchmark_BWT_100000(b *testing.B) {

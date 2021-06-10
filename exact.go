@@ -102,7 +102,7 @@ func Bmh(x, p string, callback func(int)) {
 
 // This is here to show the difference between using
 // a map and an array, both in code and in time...
-func Bmh_map(x, p string, callback func(int)) {
+func BmhWithMap(x, p string, callback func(int)) {
 	if len(p) == 0 {
 		reportEmptyMatches(x, callback)
 		return
@@ -130,38 +130,35 @@ func Bmh_map(x, p string, callback func(int)) {
 }
 
 // And here's a version that uses Strings
-func Bmh_String(x_, p_ string, callback func(int)) {
+func BmhWithAlphabet(x_, p_ string, callback func(int)) {
 	if len(p_) == 0 {
 		reportEmptyMatches(x_, callback)
 		return
 	}
 
-	x, _ := NewString(x_, nil)
-	p, err := NewString(p_, x.Alpha)
+	alpha := NewAlphabet(x_)
+	x, _ := alpha.MapToBytes(x_)
+	p, err := alpha.MapToBytes(p_)
 	if err != nil {
 		// We can't map, so we can't match
 		return
 	}
 
-	// Don't include the sentinels in the lenghts
-	xlen := x.Length() - 1
-	plen := p.Length() - 1
-
-	jump_tbl := make([]int, x.Alpha.Size())
+	jump_tbl := make([]int, alpha.Size())
 	for j := range jump_tbl {
-		jump_tbl[j] = plen
+		jump_tbl[j] = len(p)
 	}
-	for j := 0; j < plen-1; j++ {
-		jump_tbl[p.At(j)] = plen - j - 1
+	for j := 0; j < len(p)-1; j++ {
+		jump_tbl[p[j]] = len(p) - j - 1
 	}
 
-	for i := 0; i < xlen-plen+1; {
-		for j := plen - 1; x.At(i+j) == p.At(j); j-- {
+	for i := 0; i < len(x)-len(p)+1; {
+		for j := len(p) - 1; x[i+j] == p[j]; j-- {
 			if j == 0 {
 				callback(i)
 				break
 			}
 		}
-		i += jump_tbl[x.At(i+plen-1)]
+		i += jump_tbl[x[i+len(p)-1]]
 	}
 }

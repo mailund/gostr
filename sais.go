@@ -269,9 +269,17 @@ func recSais(x, SA []int, asize int, isS *bitArray) {
 	induceLS(x, SA, buckets, bucketEnds, isS)
 }
 
-func Sais(x *String) (SA []int) {
-	SA = make([]int, x.Length())
-	isS := newBitArray(x.Length())
-	recSais(x.ToInts(), SA, x.Alpha.Size(), isS)
+func SaisWithAlphabet(x_ string, alpha *Alphabet) (SA []int) {
+	x, err := alpha.MapToIntsWithSentinel(x_)
+	if err != nil {
+		panic("We do not handle mapping errors in Sais")
+	}
+	SA = make([]int, len(x))
+	isS := newBitArray(len(x))
+	recSais(x, SA, alpha.Size(), isS)
 	return SA
+}
+
+func Sais(x string) (SA []int) {
+	return SaisWithAlphabet(x, NewAlphabet(x))
 }

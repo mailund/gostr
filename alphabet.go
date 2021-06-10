@@ -37,8 +37,9 @@ func (alpha *Alphabet) Contains(a byte) bool {
 	return a == 0 || alpha._map[a] != 0
 }
 
-func (alpha *Alphabet) Map(x string) ([]byte, error) {
-	out := make([]byte, len(x)+1) // for convinience we always include sentinel
+// Generics would be really nice here... unfortunately, not in the
+// language yet
+func (alpha *Alphabet) mapBytes(x string, out []byte) ([]byte, error) {
 	for i := 0; i < len(x); i++ {
 		b := alpha._map[x[i]]
 		if b == 0 && x[i] != 0 {
@@ -49,53 +50,55 @@ func (alpha *Alphabet) Map(x string) ([]byte, error) {
 	return out, nil
 }
 
-func (alpha *Alphabet) Revmap(x []byte) string {
-	if len(x) == 0 || x[len(x)-1] != 0 {
-		panic("Mapped strings must have a terminal sentinel")
+func (alpha *Alphabet) mapInts(x string, out []int) ([]int, error) {
+	for i := 0; i < len(x); i++ {
+		b := alpha._map[x[i]]
+		if b == 0 && x[i] != 0 {
+			return []int{}, fmt.Errorf("character %q is not in the alphabet", x[i])
+		}
+		out[i] = int(b)
 	}
-	out := make([]byte, len(x)-1)
-	for i := 0; i < len(x)-1; i++ {
+	return out, nil
+}
+
+func (alpha *Alphabet) MapToBytes(x string) ([]byte, error) {
+	return alpha.mapBytes(x, make([]byte, len(x)))
+}
+
+func (alpha *Alphabet) MapToBytesWithSentinel(x string) ([]byte, error) {
+	return alpha.mapBytes(x, make([]byte, len(x)+1))
+}
+
+func (alpha *Alphabet) MapToInts(x string) ([]int, error) {
+	return alpha.mapInts(x, make([]int, len(x)))
+}
+
+func (alpha *Alphabet) MapToIntsWithSentinel(x string) ([]int, error) {
+	return alpha.mapInts(x, make([]int, len(x)+1))
+}
+
+func (alpha *Alphabet) RevmapBytes(x []byte) string {
+	strip := 0 // If we have a sentinel, we remove it again
+	if len(x) > 0 && x[len(x)-1] == 0 {
+		strip++
+	}
+	out := make([]byte, len(x)-strip)
+	for i := 0; i < len(out); i++ {
 		b := alpha._revmap[x[i]]
 		out[i] = b
 	}
 	return string(out)
 }
 
-type String struct {
-	bytes []byte
-	Alpha *Alphabet
-}
-
-func NewString(x string, alpha *Alphabet) (*String, error) {
-	if alpha == nil {
-		alpha = NewAlphabet(x)
+func (alpha *Alphabet) RevmapInts(x []int) string {
+	strip := 0 // If we have a sentinel, we remove it again
+	if len(x) > 0 && x[len(x)-1] == 0 {
+		strip++
 	}
-	if bytes, err := alpha.Map(x); err == nil {
-		return &String{bytes, alpha}, nil
-	} else {
-		return nil, err
+	out := make([]byte, len(x)-strip)
+	for i := 0; i < len(out); i++ {
+		b := alpha._revmap[x[i]]
+		out[i] = b
 	}
-}
-
-func (x *String) At(i int) byte {
-	return x.bytes[i]
-}
-
-func (x *String) Length() int {
-	return len(x.bytes)
-}
-
-func (x *String) ToGoString() string {
-	return string(x.Alpha.Revmap(x.bytes))
-}
-
-// ToInts returns the bytes in a string as an integer slice.
-// This is mostly useful in suffix array construction algorithms where
-// we need to work with slices of integers in the recursions.
-func (x *String) ToInts() []int {
-	res := make([]int, len(x.bytes))
-	for i, b := range x.bytes {
-		res[i] = int(b)
-	}
-	return res
+	return string(out)
 }

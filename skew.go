@@ -200,6 +200,14 @@ func skew(x []int, asize int) []int {
 }
 
 // Skew builds the suffix array of a String using the skew algorithm.
-func Skew(x *String) []int {
-	return skew(x.ToInts(), x.Alpha.Size())
+func SkewWithAlphabet(x string, alpha *Alphabet) []int {
+	x_, err := alpha.MapToIntsWithSentinel(x)
+	if err != nil {
+		panic("We do not handle mapping errors in Skew")
+	}
+	return skew(x_, alpha.Size())
+}
+
+func Skew(x string) []int {
+	return SkewWithAlphabet(x, NewAlphabet(x))
 }

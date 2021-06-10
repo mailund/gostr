@@ -8,19 +8,11 @@ import (
 	"github.com/mailund/gostr/test"
 )
 
-type SAAlgoString = func(x *gostr.String) []int
 type SAAlgo = func(x string) []int
 
-func wrap(algo SAAlgoString) SAAlgo {
-	return func(x_ string) []int {
-		x, _ := gostr.NewString(x_, nil)
-		return algo(x)
-	}
-}
-
 var sa_algorithms = map[string]SAAlgo{
-	"Skew": wrap(gostr.Skew),
-	"Sais": wrap(gostr.Sais),
+	"Skew": gostr.Skew,
+	"Sais": gostr.Sais,
 }
 
 func runBasicTest(algo SAAlgo) func(*testing.T) {
