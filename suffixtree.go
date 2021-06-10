@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unsafe"
 )
 
 // -- Substrings represented as intervals -----------------
@@ -49,42 +50,47 @@ type LeafNode struct {
 type InnerNode struct {
 	SharedNode
 	SuffixLink *InnerNode
-	Children   []STNodeRef
+	Children   []STNode
 }
 
-type STNodeRef struct {
+type STNode struct {
 	NodeType STNodeType
-	// FIXME: use unsafe to pack these into one pointer
-	Shared *SharedNode
-	Leaf   *LeafNode
-	Inner  *InnerNode
+	ptr      unsafe.Pointer
 }
 
-func refLeaf(n *LeafNode) STNodeRef {
-	return STNodeRef{
+func (n STNode) Shared() *SharedNode {
+	return (*SharedNode)(n.ptr)
+}
+
+func (n STNode) Leaf() *LeafNode {
+	return (*LeafNode)(n.ptr)
+}
+
+func (n STNode) Inner() *InnerNode {
+	return (*InnerNode)(n.ptr)
+}
+
+func refLeaf(n *LeafNode) STNode {
+	return STNode{
 		NodeType: Leaf,
-		Shared:   &n.SharedNode,
-		Leaf:     n,
-		Inner:    nil,
+		ptr:      unsafe.Pointer(n),
 	}
 }
 
-func refInner(n *InnerNode) STNodeRef {
-	return STNodeRef{
+func refInner(n *InnerNode) STNode {
+	return STNode{
 		NodeType: Inner,
-		Shared:   &n.SharedNode,
-		Leaf:     nil,
-		Inner:    n,
+		ptr:      unsafe.Pointer(n),
 	}
 }
 
-func (n STNodeRef) EdgeLabel(x []byte, alpha *Alphabet) string {
-	return n.Shared.substr(x, alpha)
+func (n STNode) EdgeLabel(x []byte, alpha *Alphabet) string {
+	return n.Shared().substr(x, alpha)
 }
 
-func (n STNodeRef) PathLabel(x []byte, alpha *Alphabet) string {
-	labels := []string{n.Shared.substr(x, alpha)}
-	for p := n.Shared.Parent; p != nil; p = p.Parent {
+func (n STNode) PathLabel(x []byte, alpha *Alphabet) string {
+	labels := []string{n.Shared().substr(x, alpha)}
+	for p := n.Shared().Parent; p != nil; p = p.Parent {
 		labels = append(labels, p.substr(x, alpha))
 	}
 	for i, j := 0, len(labels)-1; i < j; i, j = i+1, j-1 {
@@ -93,12 +99,12 @@ func (n STNodeRef) PathLabel(x []byte, alpha *Alphabet) string {
 	return strings.Join(labels, "")
 }
 
-func (n STNodeRef) LeafIndices(visitor func(int)) {
+func (n STNode) LeafIndices(visitor func(int)) {
 	switch n.NodeType {
 	case Leaf:
-		visitor(n.Leaf.Index)
+		visitor(n.Leaf().Index)
 	case Inner:
-		for _, child := range n.Inner.Children {
+		for _, child := range n.Inner().Children {
 			child.LeafIndices(visitor)
 		}
 	}
@@ -116,16 +122,16 @@ func ReplaceSentinelString(x string) string {
 	return strings.ReplaceAll(x, "\x00", "†")
 }
 
-func (n STNodeRef) ToDot(x []byte, alpha *Alphabet, w io.Writer) {
+func (n STNode) ToDot(x []byte, alpha *Alphabet, w io.Writer) {
 	switch n.NodeType {
 	case Leaf:
-		v := n.Leaf
+		v := n.Leaf()
 		fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
 			v.Parent, v, ReplaceSentinelString(v.substr(x, alpha)))
 		fmt.Fprintf(w, "\"%p\"[label=%d]\n", v, v.Index)
 
 	case Inner:
-		v := n.Inner
+		v := n.Inner()
 		if v.Parent == nil {
 			// Root
 			fmt.Fprintf(w, "\"%p\"[label=\"\", shape=circle, style=filled, fillcolor=grey]\n", v)
@@ -143,9 +149,9 @@ func (n STNodeRef) ToDot(x []byte, alpha *Alphabet, w io.Writer) {
 	}
 }
 
-func (n *InnerNode) addChild(child STNodeRef, x []byte) {
-	n.Children[x[child.Shared.From]] = child
-	child.Shared.Parent = n
+func (n *InnerNode) addChild(child STNode, x []byte) {
+	n.Children[x[child.Shared().From]] = child
+	child.Shared().Parent = n
 }
 
 // -- Suffix tree --------------------------
@@ -153,30 +159,30 @@ func (n *InnerNode) addChild(child STNodeRef, x []byte) {
 type SuffixTree struct {
 	Alpha  *Alphabet
 	String []byte
-	Root   STNodeRef
+	Root   STNode
 }
 
-func (st *SuffixTree) newLeaf(idx int, r Range) STNodeRef {
+func (st *SuffixTree) newLeaf(idx int, r Range) STNode {
 	leaf := LeafNode{
 		SharedNode: SharedNode{Range: r},
 		Index:      idx}
 	return refLeaf(&leaf)
 }
 
-func (st *SuffixTree) newInner(r Range) STNodeRef {
+func (st *SuffixTree) newInner(r Range) STNode {
 	node := InnerNode{
 		SharedNode: SharedNode{Range: r},
-		Children:   make([]STNodeRef, st.Alpha.Size())}
+		Children:   make([]STNode, st.Alpha.Size())}
 	return refInner(&node)
 }
 
-func (st *SuffixTree) breakEdge(n STNodeRef, depth, leafidx int, y Range, x []byte) STNodeRef {
-	new_node := st.newInner(n.Shared.Range.prefix(depth))
-	n.Shared.Parent.addChild(new_node, x)
+func (st *SuffixTree) breakEdge(n STNode, depth, leafidx int, y Range, x []byte) STNode {
+	new_node := st.newInner(n.Shared().Range.prefix(depth))
+	n.Shared().Parent.addChild(new_node, x)
 	new_leaf := st.newLeaf(leafidx, y)
-	n.Shared.From += depth
-	new_node.Inner.addChild(new_leaf, x)
-	new_node.Inner.addChild(n, x)
+	n.Shared().From += depth
+	new_node.Inner().addChild(new_leaf, x)
+	new_node.Inner().addChild(n, x)
 	return new_leaf
 }
 
@@ -226,17 +232,17 @@ func lenSharedPrefix(r1, r2 Range, x, y []byte) int {
 // x is the underlying strings for nodes, y is the string
 // for inter (which when we construct is also x, but when we
 // search it is likely another string).
-func sscan(n STNodeRef, r Range, x, y []byte) (STNodeRef, int, Range) {
+func sscan(n STNode, r Range, x, y []byte) (STNode, int, Range) {
 	if r.length() == 0 {
 		return n, 0, r
 	}
 	// If we scan on a node, it is an inner node.
-	v := n.Inner.Children[y[r.From]]
+	v := n.Inner().Children[y[r.From]]
 	if v.NodeType == UnInitialised {
 		return n, 0, r
 	}
-	i := lenSharedPrefix(v.Shared.Range, r, x, y)
-	if i == r.length() || i < v.Shared.Range.length() {
+	i := lenSharedPrefix(v.Shared().Range, r, x, y)
+	if i == r.length() || i < v.Shared().Range.length() {
 		return v, i, r
 	}
 	// Continue from v (exploiting tail call optimisation)
@@ -255,7 +261,7 @@ func NaiveST(x_ string) SuffixTree {
 		if j == 0 {
 			// A mismatch when we try to leave a node
 			// means that it is an inner node
-			v.Inner.addChild(st.newLeaf(i, y), x)
+			v.Inner().addChild(st.newLeaf(i, y), x)
 		} else {
 			st.breakEdge(v, j, i, y.chump(j), x)
 		}
@@ -263,16 +269,16 @@ func NaiveST(x_ string) SuffixTree {
 	return st
 }
 
-func fscan(n STNodeRef, r Range, x []byte) (STNodeRef, int, Range) {
+func fscan(n STNode, r Range, x []byte) (STNode, int, Range) {
 	if r.length() == 0 {
 		return n, 0, r
 	}
 	// If we scan on a node, it is an inner node
-	v := n.Inner.Children[x[r.From]]
+	v := n.Inner().Children[x[r.From]]
 	if v.NodeType == UnInitialised {
 		panic("With fscan there should always be an out-edge")
 	}
-	i := min(v.Shared.Range.length(), r.length())
+	i := min(v.Shared().Range.length(), r.length())
 	if i == r.length() {
 		return v, i, r
 	}
@@ -295,41 +301,41 @@ func McCreight(x_ string) SuffixTree {
 	x, _ := alpha.MapToBytesWithSentinel(x_)
 	st := SuffixTree{Alpha: alpha, String: x}
 	st.Root = st.newInner(Range{0, 0})
-	st.Root.Inner.SuffixLink = st.Root.Inner
+	st.Root.Inner().SuffixLink = st.Root.Inner()
 	currLeaf := st.newLeaf(0, Range{0, len(x)})
-	st.Root.Inner.addChild(currLeaf, x)
+	st.Root.Inner().addChild(currLeaf, x)
 
 	// The bits of the suffix we need to search for
 	var y, z Range
 	// ynode is the node we get to when searching for y
-	var ynode STNodeRef
+	var ynode STNode
 	// depth is how far down an edge we have searched
 	var depth int
 
 	for i := 1; i < len(x); i++ {
-		p := currLeaf.Shared.Parent
+		p := currLeaf.Shared().Parent
 
 		if p.SuffixLink != nil {
 			// We don't need y here, just z and ynode
-			z = currLeaf.Shared.suffix()
+			z = currLeaf.Shared().suffix()
 			ynode = refInner(p.SuffixLink)
 
 		} else {
 			pp := p.Parent
 			// this time we need to search in both y and z
 			y = p.suffix()
-			z = currLeaf.Shared.Range
+			z = currLeaf.Shared().Range
 
 			ynode, depth, _ = fscan(refInner(pp.SuffixLink), y, x)
-			if depth < ynode.Shared.Range.length() {
+			if depth < ynode.Shared().Range.length() {
 				// ended on an edge
 				currLeaf = st.breakEdge(ynode, depth, i, z, x)
-				p.SuffixLink = currLeaf.Shared.Parent
+				p.SuffixLink = currLeaf.Shared().Parent
 				continue // Go to next suffix, we are done here
 			}
 
 			// Remember p's suffix link for later...
-			p.SuffixLink = ynode.Inner
+			p.SuffixLink = ynode.Inner()
 		}
 
 		// This is the slow scan part, from ynode and the rest
@@ -338,7 +344,7 @@ func McCreight(x_ string) SuffixTree {
 		if depth == 0 {
 			// Landed on a node
 			currLeaf = st.newLeaf(i, w)
-			n.Inner.addChild(currLeaf, x)
+			n.Inner().addChild(currLeaf, x)
 
 		} else {
 			// Landed on an edge

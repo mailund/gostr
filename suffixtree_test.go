@@ -11,11 +11,11 @@ import (
 )
 
 func checkPathLabels(
-	n STNodeRef, algo string,
+	n STNode, algo string,
 	st SuffixTree, t *testing.T) {
 	switch n.NodeType {
 	case Leaf:
-		v := n.Leaf
+		v := n.Leaf()
 		if n.PathLabel(st.String, st.Alpha) != string(st.Alpha.RevmapBytes(st.String[v.Index:])) {
 			t.Errorf(`%s(%s): the path label of leaf %d should be "%s" but is "%s"`,
 				algo,
@@ -25,7 +25,7 @@ func checkPathLabels(
 		}
 
 	case Inner:
-		for _, child := range n.Inner.Children {
+		for _, child := range n.Inner().Children {
 			if child.NodeType != UnInitialised {
 				checkPathLabels(child, algo, st, t)
 			}

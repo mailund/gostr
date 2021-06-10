@@ -28,13 +28,13 @@ func BenchmarkMcCreight10000(b *testing.B)   { benchmarkConstruction(b, McCreigh
 func BenchmarkMcCreight100000(b *testing.B)  { benchmarkConstruction(b, McCreight, 100000) }
 func BenchmarkMcCreight1000000(b *testing.B) { benchmarkConstruction(b, McCreight, 1000000) }
 
-func publicTraversal(n STNodeRef) int {
+func publicTraversal(n STNode) int {
 	switch n.NodeType {
 	case Leaf:
-		return n.Leaf.Index
+		return n.Leaf().Index
 	case Inner:
 		val := 0
-		for _, child := range n.Inner.Children {
+		for _, child := range n.Inner().Children {
 			if child.NodeType != UnInitialised {
 				val += publicTraversal(child)
 			}
@@ -44,7 +44,7 @@ func publicTraversal(n STNodeRef) int {
 	return 0 // Unreachable, but we need to return...
 }
 
-func visitorTraversal(n STNodeRef) int {
+func visitorTraversal(n STNode) int {
 	res := 0
 	n.LeafIndices(func(idx int) { res += idx })
 	return res
@@ -66,7 +66,7 @@ func Test_Traversal(t *testing.T) {
 	}
 }
 
-func benchmarkTraversal(traversal func(STNodeRef) int, b *testing.B) {
+func benchmarkTraversal(traversal func(STNode) int, b *testing.B) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	x := test.RandomStringN(1000, "abcdefg", rng)
