@@ -110,19 +110,12 @@ func (n STNode) LeafIndices(visitor func(int)) {
 	}
 }
 
-// For IO where we don't want to display the sentinel
-// as byte zero
-func ReplaceSentinel(x string) string {
-	// Need this one for readable output
-	return strings.ReplaceAll(x, "\x00", "†")
-}
-
 func (n STNode) ToDot(x []byte, alpha *Alphabet, w io.Writer) {
 	switch n.NodeType {
 	case Leaf:
 		v := n.Leaf()
 		fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
-			v.Parent, v, ReplaceSentinel(v.substr(x, alpha)))
+			v.Parent, v, v.substr(x, alpha))
 		fmt.Fprintf(w, "\"%p\"[label=%d]\n", v, v.Index)
 
 	case Inner:
@@ -132,7 +125,7 @@ func (n STNode) ToDot(x []byte, alpha *Alphabet, w io.Writer) {
 			fmt.Fprintf(w, "\"%p\"[label=\"\", shape=circle, style=filled, fillcolor=grey]\n", v)
 		} else {
 			fmt.Fprintf(w, "\"%p\" -> \"%p\"[label=\"%s\"]\n",
-				v.Parent, v, ReplaceSentinel(v.substr(x, alpha)))
+				v.Parent, v, v.substr(x, alpha))
 			fmt.Fprintf(w, "\"%p\"[shape=point]\n", v)
 		}
 		if v.SuffixLink != nil {
