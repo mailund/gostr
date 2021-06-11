@@ -245,8 +245,7 @@ func sscan(n STNode, r Range, x, y []byte) (STNode, int, Range) {
 }
 
 func NaiveST(x_ string) SuffixTree {
-	alpha := NewAlphabet(x_)
-	x, _ := alpha.MapToBytesWithSentinel(x_)
+	x, alpha := MapStringWithSentinel(x_)
 
 	st := SuffixTree{Alpha: alpha, String: x}
 	st.Root = st.newInner(Range{0, 0})
@@ -292,8 +291,7 @@ func (v *SharedNode) suffix() Range {
 }
 
 func McCreight(x_ string) SuffixTree {
-	alpha := NewAlphabet(x_)
-	x, _ := alpha.MapToBytesWithSentinel(x_)
+	x, alpha := MapStringWithSentinel(x_)
 	st := SuffixTree{Alpha: alpha, String: x}
 	st.Root = st.newInner(Range{0, 0})
 	st.Root.Inner().SuffixLink = st.Root.Inner()

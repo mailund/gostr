@@ -129,15 +129,14 @@ func BmhWithMap(x, p string, callback func(int)) {
 	}
 }
 
-// And here's a version that uses Strings
+// And here's a version that uses remapped strings
 func BmhWithAlphabet(x_, p_ string, callback func(int)) {
 	if len(p_) == 0 {
 		reportEmptyMatches(x_, callback)
 		return
 	}
 
-	alpha := NewAlphabet(x_)
-	x, _ := alpha.MapToBytes(x_)
+	x, alpha := MapString(x_)
 	p, err := alpha.MapToBytes(p_)
 	if err != nil {
 		// We can't map, so we can't match

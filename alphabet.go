@@ -2,6 +2,9 @@ package gostr
 
 import "fmt"
 
+const Sentinel = '\x00'
+const SentinelSymbol = rune('𝕊')
+
 type Alphabet struct {
 	_map    [256]byte
 	_revmap [256]byte
@@ -34,7 +37,7 @@ func (alpha *Alphabet) Size() int {
 }
 
 func (alpha *Alphabet) Contains(a byte) bool {
-	return a == 0 || alpha._map[a] != 0
+	return a == Sentinel || alpha._map[a] != 0
 }
 
 // Generics would be really nice here... unfortunately, not in the
@@ -82,10 +85,13 @@ func (alpha *Alphabet) revmapBytes(x []byte, strip_sentinel bool) string {
 	if strip_sentinel && len(x) > 0 && x[len(x)-1] == 0 {
 		strip++
 	}
-	out := make([]byte, len(x)-strip)
+	out := make([]rune, len(x)-strip)
 	for i := 0; i < len(out); i++ {
-		b := alpha._revmap[x[i]]
-		out[i] = b
+		if x[i] == Sentinel {
+			out[i] = SentinelSymbol
+		} else {
+			out[i] = rune(alpha._revmap[x[i]])
+		}
 	}
 	return string(out)
 }
@@ -96,4 +102,16 @@ func (alpha *Alphabet) RevmapBytes(x []byte) string {
 
 func (alpha *Alphabet) RevmapBytesStripSentinel(x []byte) string {
 	return alpha.revmapBytes(x, true)
+}
+
+func MapString(x string) ([]byte, *Alphabet) {
+	alpha := NewAlphabet(x)
+	x_, _ := alpha.MapToBytes(x)
+	return x_, alpha
+}
+
+func MapStringWithSentinel(x string) ([]byte, *Alphabet) {
+	alpha := NewAlphabet(x)
+	x_, _ := alpha.MapToBytesWithSentinel(x)
+	return x_, alpha
 }

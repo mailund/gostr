@@ -1,7 +1,5 @@
 package gostr
 
-const sentinel = '\x00'
-
 /*
    BwtIdx gives you the ith letter in the Burrows-Wheeler transform
    of a string. Use it if you want to know the BWT without making a
@@ -11,7 +9,7 @@ func BwtIdx(x []byte, sa []int, i int) byte {
 	if j := sa[i]; j != 0 {
 		return x[j-1]
 	} else {
-		return sentinel
+		return Sentinel
 	}
 }
 
@@ -137,8 +135,7 @@ func BwtSearch(x, p []byte, ctab *CTab, otab *OTab) (int, int) {
 }
 
 func BwtPreprocess(x_ string) func(p string, cb func(i int)) {
-	alpha := NewAlphabet(x_)
-	x, _ := alpha.MapToBytesWithSentinel(x_)
+	x, alpha := MapStringWithSentinel(x_)
 	sa := SaisWithAlphabet(x_, alpha)
 	ctab := NewCTab(x, alpha)
 	otab := NewOTab(x, sa, ctab, alpha)

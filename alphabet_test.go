@@ -2,6 +2,7 @@ package gostr
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -37,15 +38,16 @@ func checkAlphabet(
 		t.Fatalf("We expected the mapped string to be %v but it is %v", expected_mapped, y)
 	}
 
+	xx := strings.ReplaceAll(x, string(Sentinel), string(SentinelSymbol))
 	z := alpha.RevmapBytesStripSentinel(y)
-	if !reflect.DeepEqual(x, z) {
+	if !reflect.DeepEqual(xx, z) {
 		t.Fatalf(`Mapping back we expected "%s" but got "%s"`, x, z)
 	}
 	zz := alpha.RevmapBytes(y)
 	if !reflect.DeepEqual(zz[:len(z)], z) {
 		t.Fatalf(`Strings "%s" and "%s" should be equal`, z, zz)
 	}
-	if zz[len(z)] != 0 {
+	if zz != z+string(SentinelSymbol) {
 		t.Fatalf(`The last character in "%s" should be sentinel`, zz)
 	}
 
