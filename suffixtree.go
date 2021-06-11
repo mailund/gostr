@@ -33,8 +33,8 @@ type STNodeType int
 
 const (
 	UnInitialised STNodeType = iota
-	Leaf                     = iota
-	Inner                    = iota
+	Leaf          STNodeType = iota
+	Inner         STNodeType = iota
 )
 
 type SharedNode struct {
@@ -56,6 +56,10 @@ type InnerNode struct {
 type STNode struct {
 	NodeType STNodeType
 	ptr      unsafe.Pointer
+}
+
+func (n STNode) isNil() bool {
+	return n.NodeType == UnInitialised
 }
 
 func (n STNode) Shared() *SharedNode {
@@ -226,7 +230,7 @@ func sscan(n STNode, r Range, x, y []byte) (STNode, int, Range) {
 	}
 	// If we scan on a node, it is an inner node.
 	v := n.Inner().Children[y[r.From]]
-	if v.NodeType == UnInitialised {
+	if v.isNil() {
 		return n, 0, r
 	}
 	i := lenSharedPrefix(v.Shared().Range, r, x, y)
@@ -262,7 +266,7 @@ func fscan(n STNode, r Range, x []byte) (STNode, int, Range) {
 	}
 	// If we scan on a node, it is an inner node
 	v := n.Inner().Children[x[r.From]]
-	if v.NodeType == UnInitialised {
+	if v.isNil() {
 		panic("With fscan there should always be an out-edge")
 	}
 	i := min(v.Shared().Range.length(), r.length())
