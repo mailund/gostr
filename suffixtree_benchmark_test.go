@@ -10,7 +10,7 @@ import (
 
 func benchmarkConstruction(
 	b *testing.B,
-	constructor func(string) SuffixTree,
+	constructor func(string) *SuffixTree,
 	n int) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))

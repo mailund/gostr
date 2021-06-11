@@ -12,7 +12,7 @@ import (
 
 func checkPathLabels(
 	n STNode, algo string,
-	st SuffixTree, t *testing.T) {
+	st *SuffixTree, t *testing.T) {
 	switch n.NodeType {
 	case Leaf:
 		v := n.Leaf()
@@ -35,7 +35,7 @@ func checkPathLabels(
 
 func testSuffixTree(
 	algo string,
-	construction func(string) SuffixTree,
+	construction func(string) *SuffixTree,
 	x string,
 	t *testing.T) *SuffixTree {
 	st := construction(x)
@@ -68,7 +68,7 @@ func testSuffixTree(
 
 	checkPathLabels(st.Root, algo, st, t)
 
-	return &st
+	return st
 }
 
 func testSearchMatch(
@@ -135,7 +135,7 @@ func Test_McCreightConstruction(t *testing.T) {
 
 func Test_STRandomStrings(t *testing.T) {
 	algos := []string{"NaiveST", "McCreight"}
-	constructors := []func(string) SuffixTree{NaiveST, McCreight}
+	constructors := []func(string) *SuffixTree{NaiveST, McCreight}
 
 	seed := time.Now().UTC().UnixNano()
 	t.Logf("Random seed: %d", seed)

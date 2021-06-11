@@ -32,6 +32,10 @@ func (r Range) substr(x []byte, alpha *Alphabet) string {
 type STNodeType int
 
 const (
+	// UnInitialised works both as a "nil" and as an easy
+	// way to write functions on nodes. Switch on the type,
+	// but only handle Leaf and Inner, and you skip the
+	// nil nodes that way.
 	UnInitialised STNodeType = iota
 	Leaf          STNodeType = iota
 	Inner         STNodeType = iota
@@ -241,7 +245,7 @@ func sscan(n STNode, r Range, x, y []byte) (STNode, int, Range) {
 	return sscan(v, r.chump(i), x, y)
 }
 
-func NaiveST(x_ string) SuffixTree {
+func NaiveST(x_ string) *SuffixTree {
 	x, alpha := MapStringWithSentinel(x_)
 
 	st := SuffixTree{Alpha: alpha, String: x}
@@ -257,7 +261,7 @@ func NaiveST(x_ string) SuffixTree {
 			st.breakEdge(v, j, i, y.chump(j), x)
 		}
 	}
-	return st
+	return &st
 }
 
 func fscan(n STNode, r Range, x []byte) (STNode, int, Range) {
@@ -287,7 +291,7 @@ func (v *SharedNode) suffix() Range {
 	}
 }
 
-func McCreight(x_ string) SuffixTree {
+func McCreight(x_ string) *SuffixTree {
 	x, alpha := MapStringWithSentinel(x_)
 	st := SuffixTree{Alpha: alpha, String: x}
 	st.Root = st.newInner(Range{0, 0})
@@ -341,14 +345,41 @@ func McCreight(x_ string) SuffixTree {
 			currLeaf = st.breakEdge(n, depth, i, w.chump(depth), x)
 		}
 	}
-	return st
+	return &st
 }
 
-/*
+// SECTION Generating other arrays
 func (st *SuffixTree) ComputeSuffixAndLcpArray() ([]int, []int) {
 	sa := make([]int, len(st.String))
 	lcp := make([]int, len(st.String))
-	// FIXME
+	i := 0
+
+	var traverse func(n STNode, left, depth int)
+	traverse = func(n STNode, left, depth int) {
+		switch n.NodeType {
+		case Leaf:
+			sa[i] = n.Leaf().Index
+			lcp[i] = left
+			i++
+
+		case Inner:
+			for _, child := range n.Inner().Children {
+				if child.isNil() {
+					continue
+				}
+				traverse(child, left, depth+child.Shared().length())
+				left = depth // The remaining children should use depth
+			}
+		}
+	}
+
+	traverse(st.Root, 0, 0)
 	return sa, lcp
 }
-*/
+
+func StSaConstruction(x string) []int {
+	sa, _ := McCreight(x).ComputeSuffixAndLcpArray()
+	return sa
+}
+
+// !SECTION

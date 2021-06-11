@@ -29,10 +29,9 @@ func bwtWrapper(x, p string, cb func(int)) {
 }
 
 // Same for suffix trees...
-func stWrapper(algo func(string) gostr.SuffixTree) func(x, p string, cb func(int)) {
+func stWrapper(algo func(string) *gostr.SuffixTree) func(x, p string, cb func(int)) {
 	return func(x, p string, cb func(int)) {
-		st := algo(x)
-		st.Search(p, cb)
+		algo(x).Search(p, cb)
 	}
 }
 

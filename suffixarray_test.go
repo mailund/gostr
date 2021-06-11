@@ -11,8 +11,9 @@ import (
 type SAAlgo = func(x string) []int
 
 var sa_algorithms = map[string]SAAlgo{
-	"Skew": gostr.Skew,
-	"Sais": gostr.Sais,
+	"Skew":       gostr.Skew,
+	"Sais":       gostr.Sais,
+	"SuffixTree": gostr.StSaConstruction,
 }
 
 func runBasicTest(algo SAAlgo) func(*testing.T) {
