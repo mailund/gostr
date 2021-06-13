@@ -1,27 +1,19 @@
 package gostr
 
-/*
-   BwtIdx gives you the ith letter in the Burrows-Wheeler transform
-   of a string. Use it if you want to know the BWT without making a
-   new string.
-*/
-func BwtIdx(x []byte, sa []int, i int) byte {
-	if j := sa[i]; j != 0 {
-		return x[j-1]
-	} else {
-		return Sentinel
-	}
-}
-
 // Bwt gives you the Burrows-Wheeler transform of a string,
 // computed using the suffix array for the string. The
 // string should have a sentinel
-func BwtString(x []byte, sa []int) string {
+func Bwt(x []byte, sa []int) []byte {
 	bwt := make([]byte, len(x))
 	for i := 0; i < len(sa); i++ {
-		bwt[i] = BwtIdx(x, sa, i)
+		j := sa[i]
+		if j == 0 {
+			bwt[i] = Sentinel
+		} else {
+			bwt[i] = x[j-1]
+		}
 	}
-	return string(bwt)
+	return bwt
 }
 
 // CTab Structur holding the C-table for BWT search.
@@ -39,12 +31,13 @@ func (ctab *CTab) Rank(a byte) int {
 }
 
 // Ctab builds the c-table from a string.
-func NewCTab(x []byte, alpha *Alphabet) *CTab {
+func NewCTab(bwt []byte, asize int) *CTab {
 	// First, count how often we see each character
-	counts := make([]int, alpha.Size())
-	for _, b := range x {
+	counts := make([]int, asize)
+	for _, b := range bwt {
 		counts[b]++
 	}
+	// Then get the accumulative sum
 	var n int = 0
 	for i, count := range counts {
 		counts[i] = n
@@ -59,18 +52,18 @@ type OTab struct {
 	table      []int
 }
 
-func (otab *OTab) offset(a, i int) int {
+func (otab *OTab) offset(a byte, i int) int {
 	// -1 to a because we don't store the sentinel
 	// and -1 to i because we don't store the first
 	// row (which is always zero)
-	return otab.ncol*(a-1) + (i - 1)
+	return otab.ncol*(int(a)-1) + (i - 1)
 }
 
-func (otab *OTab) get(a, i int) int {
+func (otab *OTab) get(a byte, i int) int {
 	return otab.table[otab.offset(a, i)]
 }
 
-func (otab *OTab) set(a, i int, val int) {
+func (otab *OTab) set(a byte, i int, val int) {
 	otab.table[otab.offset(a, i)] = val
 }
 
@@ -82,41 +75,73 @@ func (otab *OTab) Rank(a byte, i int) int {
 	if i == 0 {
 		return 0
 	} else {
-		return otab.get(int(a), i)
+		return otab.get(a, i)
 	}
 }
 
 // Otab builds the o-table from a string. It uses
 // the suffix array to get the BWT and a c-table
 // to handle the alphabet.
-func NewOTab(x []byte, sa []int, ctab *CTab, alpha *Alphabet) *OTab {
+func NewOTab(bwt []byte, asize int) *OTab {
 	// We index for all characters except $, so
 	// nrow is the alphabet size minus one.
 	// We index all indices [0,len(sa)], but we emulate
 	// row 0, since it is always zero, so we only need
 	// len(sa) columns.
-	nrow, ncol := alpha.Size()-1, len(sa)
+	nrow, ncol := asize-1, len(bwt)
 	table := make([]int, nrow*ncol)
 	otab := OTab{nrow, ncol, table}
 
 	// The character at the beginning of bwt gets a count
 	// of one at row one.
-	a := int(BwtIdx(x, sa, 0))
-	otab.set(a, 1, 1)
+	otab.set(bwt[0], 1, 1)
 
 	// The remaining entries either copies or increment from
 	// the previous column. We count a from 1 to alpha size
 	// to skip the sentinel, then -1 for the index
-	for a := 1; a < alpha.Size(); a++ {
-		for i := 2; i <= len(sa); i++ {
+	for a_ := 1; a_ < asize; a_++ {
+		a := byte(a_)
+		for i := 2; i <= len(bwt); i++ {
 			val := otab.get(a, i-1)
-			if BwtIdx(x, sa, i-1) == byte(a) {
+			if bwt[i-1] == a {
 				val++
 			}
 			otab.set(a, i, val)
 		}
 	}
 	return &otab
+}
+
+func countLetters(x []byte) int {
+	observed := make([]int, 256)
+	for _, a := range x {
+		observed[a] = 1
+	}
+	asize := 0
+	for _, i := range observed {
+		asize += i
+	}
+	return asize
+}
+
+func ReverseBwt(bwt []byte) []byte {
+	asize := countLetters(bwt)
+	ctab := NewCTab(bwt, asize)
+	otab := NewOTab(bwt, asize)
+
+	var x []byte = make([]byte, len(bwt))
+	var i int = 0
+	// We start at len(bwt) - 2 because we already
+	// (implicitly) have the sentinel at len(bwt) - 1
+	// and this way we don't need to start at the index
+	// in bwt that has the sentinel (so we save a search).
+	for j := len(bwt) - 2; j >= 0; j-- {
+		a := bwt[i]
+		x[j] = a
+		i = ctab.Rank(a) + otab.Rank(a, i)
+	}
+
+	return x
 }
 
 // BwtSearch finds all occurrences of p in x via a c-table
@@ -137,8 +162,9 @@ func BwtSearch(x, p []byte, ctab *CTab, otab *OTab) (int, int) {
 func BwtPreprocess(x_ string) func(p string, cb func(i int)) {
 	x, alpha := MapStringWithSentinel(x_)
 	sa := SaisWithAlphabet(x_, alpha)
-	ctab := NewCTab(x, alpha)
-	otab := NewOTab(x, sa, ctab, alpha)
+	bwt := Bwt(x, sa)
+	ctab := NewCTab(bwt, alpha.Size())
+	otab := NewOTab(bwt, alpha.Size())
 	return func(p_ string, cb func(i int)) {
 		p, err := alpha.MapToBytes(p_)
 		if err != nil {
