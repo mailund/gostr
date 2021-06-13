@@ -16,12 +16,12 @@ func checkPathLabels(
 	switch n.NodeType {
 	case Leaf:
 		v := n.Leaf()
-		if n.PathLabel(st.String, st.Alpha) != string(st.Alpha.RevmapBytes(st.String[v.Index:])) {
+		if n.PathLabel(st.Alpha) != string(st.Alpha.RevmapBytes(st.String[v.Index:])) {
 			t.Errorf(`%s(%s): the path label of leaf %d should be "%s" but is "%s"`,
 				algo,
 				st.Alpha.RevmapBytes(st.String), v.Index,
 				st.Alpha.RevmapBytes(st.String[v.Index:]),
-				n.PathLabel(st.String, st.Alpha))
+				n.PathLabel(st.Alpha))
 		}
 
 	case Inner:
