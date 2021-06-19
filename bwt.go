@@ -8,7 +8,7 @@ func Bwt(x []byte, sa []int) []byte {
 	for i := 0; i < len(sa); i++ {
 		j := sa[i]
 		if j == 0 {
-			bwt[i] = Sentinel
+			bwt[i] = 0
 		} else {
 			bwt[i] = x[j-1]
 		}
