@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/mailund/cli"
 )
 
 func main() {
-	var main *Command = NewMenu(
+	var main *cli.Command = cli.NewMenu(
 		"gostr", "run gostr commands",
 		ShowMenu())
 
