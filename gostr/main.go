@@ -9,7 +9,7 @@ import (
 
 func main() {
 	var main *cli.Command = cli.NewMenu(
-		"gostr", "run gostr commands",
+		"gostr", "run gostr commands", "",
 		ShowMenu())
 
 	if len(os.Args) < 1 {
@@ -19,5 +19,4 @@ func main() {
 	} else {
 		main.Run(os.Args[1:])
 	}
-
 }
