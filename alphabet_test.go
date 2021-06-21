@@ -14,6 +14,12 @@ func checkAlphabet(
 	if alpha.Size() != len(letters)+1 { // +1 for sentinel
 		t.Fatalf("Expected size %d, got %d", len(letters)+1, alpha.Size())
 	}
+	for i := 0; i < len(x); i++ {
+		a := x[i]
+		if !alpha.Contains(a) {
+			t.Fatalf("Expected alphabet to contain %c.", a)
+		}
+	}
 	for i, a := range letters {
 		if alpha._map[a] != byte(i+1) {
 			t.Fatalf("Expected %c to map to %d", a, i+1)

@@ -186,3 +186,35 @@ func Test_recSAIS(t *testing.T) {
 		})
 	}
 }
+
+func Test_equalLMS(t *testing.T) {
+	type args struct {
+		x []int
+		i int
+		j int
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{"both end of string",
+			args{[]int{2, 1, 1, 0}, 4, 4},
+			true},
+		{"first end of string",
+			args{[]int{2, 1, 1, 0}, 4, 0},
+			false},
+		{"second end of string",
+			args{[]int{2, 1, 1, 0}, 0, 4},
+			false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			isS := newBitArray(len(tt.args.x))
+			classifyS(isS, tt.args.x)
+			if got := equalLMS(tt.args.x, isS, tt.args.i, tt.args.j); got != tt.want {
+				t.Errorf("equalLMS() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}

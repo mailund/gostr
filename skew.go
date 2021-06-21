@@ -174,15 +174,6 @@ func uidx(i int, m int) int {
 }
 
 func skew(x []int, asize int) []int {
-	// Some of the length calculations assume that x isn't
-	// empty, so handle that explicitly. If we append to slices
-	// instead of pre-allocating, we don't need it, but it
-	// will still save some time to handle this case as soon
-	// as possible.
-	if len(x) == 0 {
-		return []int{}
-	}
-
 	SA12 := radix3(x, asize, getSA12(x))
 	alpha := collectAlphabet(x, SA12)
 	if len(alpha) < len(SA12) {
@@ -200,14 +191,15 @@ func skew(x []int, asize int) []int {
 }
 
 // Skew builds the suffix array of a String using the skew algorithm.
-func SkewWithAlphabet(x string, alpha *Alphabet) []int {
+func SkewWithAlphabet(x string, alpha *Alphabet) ([]int, error) {
 	x_, err := alpha.MapToIntsWithSentinel(x)
 	if err != nil {
-		panic("We do not handle mapping errors in Skew")
+		return []int{}, err
 	}
-	return skew(x_, alpha.Size())
+	return skew(x_, alpha.Size()), nil
 }
 
 func Skew(x string) []int {
-	return SkewWithAlphabet(x, NewAlphabet(x))
+	sa, _ := SkewWithAlphabet(x, NewAlphabet(x))
+	return sa
 }

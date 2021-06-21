@@ -161,7 +161,7 @@ func BwtSearch(x, p []byte, ctab *CTab, otab *OTab) (int, int) {
 
 func BwtPreprocess(x_ string) func(p string, cb func(i int)) {
 	x, alpha := MapStringWithSentinel(x_)
-	sa := SaisWithAlphabet(x_, alpha)
+	sa, _ := SaisWithAlphabet(x_, alpha)
 	bwt := Bwt(x, sa)
 	ctab := NewCTab(bwt, alpha.Size())
 	otab := NewOTab(bwt, alpha.Size())

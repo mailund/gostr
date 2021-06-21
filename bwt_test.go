@@ -23,7 +23,7 @@ func Test_Ctab(t *testing.T) {
 func Test_Otab(t *testing.T) {
 	x := "aab"
 	alpha := NewAlphabet(x)
-	sa := SaisWithAlphabet(x, alpha)
+	sa, _ := SaisWithAlphabet(x, alpha)
 
 	x_, _ := alpha.MapToBytesWithSentinel(x)
 	bwt := Bwt(x_, sa)
@@ -44,7 +44,7 @@ func Test_Otab(t *testing.T) {
 func Test_BwtReverse(t *testing.T) {
 	x_ := "foobar"
 	x, alpha := MapStringWithSentinel(x_)
-	sa := SaisWithAlphabet(x_, alpha)
+	sa, _ := SaisWithAlphabet(x_, alpha)
 	bwt := Bwt(x, sa)
 
 	y := ReverseBwt(bwt)
@@ -62,7 +62,7 @@ func Test_MississippiBWT(t *testing.T) {
 	x, _ := alpha.MapToBytesWithSentinel(x_)
 	p, _ := alpha.MapToBytes(p_)
 
-	sa := SkewWithAlphabet(x_, alpha)
+	sa, _ := SkewWithAlphabet(x_, alpha)
 	bwt := Bwt(x, sa)
 	ctab := NewCTab(bwt, alpha.Size())
 	otab := NewOTab(bwt, alpha.Size())

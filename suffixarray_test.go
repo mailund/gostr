@@ -61,3 +61,14 @@ func Test_SuffixArraysConsistency(t *testing.T) {
 		t.Run(name, runConsistencyTest(algo))
 	}
 }
+
+func Test_AlphabetErrors(t *testing.T) {
+	alpha := gostr.NewAlphabet("foo")
+	x := "bar" // wrong alphabet
+	if _, err := gostr.SaisWithAlphabet(x, alpha); err == nil {
+		t.Error("Expected an error making Sais SA")
+	}
+	if _, err := gostr.SkewWithAlphabet(x, alpha); err == nil {
+		t.Error("Expected an error making Skew SA")
+	}
+}

@@ -41,9 +41,18 @@ func isLMS(isS *bitArray, i int) bool {
 }
 
 func equalLMS(x []int, isS *bitArray, i, j int) bool {
+	if i == j {
+		// The same index is obviously the same...
+		return true
+	}
+	// they can't be equal now, so only one is the
+	// sentinel LMS, thus they cannot be equal
 	if i == len(x) || j == len(x) {
 		return false
 	}
+
+	// From here on, we assume that neither index points past the end.
+
 	for k := 0; ; k++ {
 		iLMS := isLMS(isS, i+k)
 		jLMS := isLMS(isS, j+k)
@@ -269,17 +278,18 @@ func recSais(x, SA []int, asize int, isS *bitArray) {
 	induceLS(x, SA, buckets, bucketEnds, isS)
 }
 
-func SaisWithAlphabet(x_ string, alpha *Alphabet) (SA []int) {
+func SaisWithAlphabet(x_ string, alpha *Alphabet) ([]int, error) {
 	x, err := alpha.MapToIntsWithSentinel(x_)
 	if err != nil {
-		panic("We do not handle mapping errors in Sais")
+		return []int{}, err
 	}
-	SA = make([]int, len(x))
+	SA := make([]int, len(x))
 	isS := newBitArray(len(x))
 	recSais(x, SA, alpha.Size(), isS)
-	return SA
+	return SA, nil
 }
 
 func Sais(x string) (SA []int) {
-	return SaisWithAlphabet(x, NewAlphabet(x))
+	sa, _ := SaisWithAlphabet(x, NewAlphabet(x))
+	return sa
 }

@@ -76,10 +76,10 @@ func wrapInner(n *InnerNode) STNode {
 	}
 }
 
+// PathLabel returns the string from the root down to a node.
+// Do not call it with a NIL node, that is an error the function
+// will crash.
 func (n STNode) PathLabel(alpha *Alphabet) string {
-	if n.IsNil() {
-		panic("There is no path label for an uninitialised node")
-	}
 	v := n.Shared()
 	labels := []string{v.EdgeLabel.Revmap(alpha)}
 	for p := v.Parent; p != nil; p = p.Parent {
@@ -254,9 +254,6 @@ func fscan(n STNode, y []byte) (STNode, int, []byte) {
 	}
 	// If we scan on a node, it is an inner node
 	v := n.Inner().Children[y[0]]
-	if v.IsNil() {
-		panic("With fscan there should always be an out-edge")
-	}
 	i := min(len(v.Shared().EdgeLabel), len(y))
 	if i == len(y) {
 		return v, i, y
