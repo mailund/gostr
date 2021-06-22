@@ -9,6 +9,12 @@ func reportEmptyMatches(x string, cb func(int)) {
 	cb(len(x))
 }
 
+// Naive runs the naive (duh) O(nm) times search algorithm.
+//
+// Parameters:
+//   - x: the string we search in.
+//   - p: the string we search for
+//   - callback: a function called for each occurrence
 func Naive(x, p string, callback func(int)) {
 	var i, j = 0, 0
 	for i = 0; i < len(x)-len(p)+1; i++ {
@@ -23,6 +29,13 @@ func Naive(x, p string, callback func(int)) {
 	}
 }
 
+// BorderSearch runs the O(n+m) time algorithm based on building
+// a border array and reporting when its value matches m.
+//
+// Parameters:
+//   - x: the string we search in.
+//   - p: the string we search for
+//   - callback: a function called for each occurrence
 func BorderSearch(x, p string, callback func(int)) {
 	if len(p) == 0 {
 		reportEmptyMatches(x, callback)
@@ -49,14 +62,20 @@ func BorderSearch(x, p string, callback func(int)) {
 	}
 }
 
+// Kmp runs the O(n+m) time Knuth-Morris-Prat algorithm.
+//
+// Parameters:
+//   - x: the string we search in.
+//   - p: the string we search for
+//   - callback: a function called for each occurrence
 func Kmp(x, p string, callback func(int)) {
 	if len(p) == 0 {
 		reportEmptyMatches(x, callback)
 		return
 	}
 	ba := StrictBorderarray(p)
-	var i int = 0
-	var j int = 0
+	var i int
+	var j int
 	for i < len(x) {
 		// Match...
 		for i < len(x) && j < len(p) && x[i] == p[j] {
@@ -76,6 +95,15 @@ func Kmp(x, p string, callback func(int)) {
 	}
 }
 
+// Bmh runs the O(nm) worst-case but expected sub-linear time
+// Boyer-Moore-Horspool algorithm. This version uses a table of size
+// 256 to map bytes to jumps, exploiting that we get bytes out of
+// indexing strings.
+//
+// Parameters:
+//   - x: the string we search in.
+//   - p: the string we search for
+//   - callback: a function called for each occurrence
 func Bmh(x, p string, callback func(int)) {
 	if len(p) == 0 {
 		reportEmptyMatches(x, callback)
@@ -100,8 +128,16 @@ func Bmh(x, p string, callback func(int)) {
 	}
 }
 
-// This is here to show the difference between using
-// a map and an array, both in code and in time...
+// BmhWithMap runs the O(nm) worst-case but expected sub-linear time
+// Boyer-Moore-Horspool algorithm. It uses a map for the jump table, and
+// can theoretically handle more characters than bytes (but doesn't, since
+// indexing into strings gives us bytes). It demonstrates the performance
+// hit you get from using a map rather than an array as in Bmh.
+//
+// Parameters:
+//   - x: the string we search in.
+//   - p: the string we search for
+//   - callback: a function called for each occurrence
 func BmhWithMap(x, p string, callback func(int)) {
 	if len(p) == 0 {
 		reportEmptyMatches(x, callback)
@@ -129,7 +165,15 @@ func BmhWithMap(x, p string, callback func(int)) {
 	}
 }
 
-// And here's a version that uses remapped strings
+// Bmh runs the O(nm) worst-case but expected sub-linear time
+// Boyer-Moore-Horspool algorithm. This version maps the input
+// strings before search, so we know their alphabet size, and can
+// create a jump table of the apprporiate size.
+//
+// Parameters:
+//   - x: the string we search in.
+//   - p: the string we search for
+//   - callback: a function called for each occurrence
 func BmhWithAlphabet(x_, p_ string, callback func(int)) {
 	if len(p_) == 0 {
 		reportEmptyMatches(x_, callback)

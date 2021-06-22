@@ -130,11 +130,11 @@ func runCheckExactOccurencesEqual(expected exactAlgo, algo exactAlgo) func(*test
 		rng := test.NewRandomSeed(t)
 		test.GenerateTestStringsAndPatterns(100, 200, rng,
 			func(x, p string) {
-				expected_hits := exactWrapper(expected)(x, p)
+				expectedHits := exactWrapper(expected)(x, p)
 				hits := exactWrapper(algo)(x, p)
-				if !test.IntArraysEqual(expected_hits, hits) {
+				if !test.IntArraysEqual(expectedHits, hits) {
 					t.Fatalf("Expected and actual hits disagree %v vs %v",
-						expected_hits, hits)
+						expectedHits, hits)
 				}
 			})
 	}

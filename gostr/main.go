@@ -15,7 +15,6 @@ func main() {
 	if len(os.Args) < 1 {
 		fmt.Println("no args")
 		main.Usage()
-		return
 	} else {
 		main.Run(os.Args[1:])
 	}

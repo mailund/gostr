@@ -99,14 +99,14 @@ func NewOTab(bwt []byte, asize int) *OTab {
 	// The remaining entries either copies or increment from
 	// the previous column. We count a from 1 to alpha size
 	// to skip the sentinel, then -1 for the index
-	for a_ := 1; a_ < asize; a_++ {
-		a := byte(a_)
+	for a := 1; a < asize; a++ {
+		ba := byte(a) // get the right type for accessing otab
 		for i := 2; i <= len(bwt); i++ {
-			val := otab.get(a, i-1)
-			if bwt[i-1] == a {
+			val := otab.get(ba, i-1)
+			if bwt[i-1] == ba {
 				val++
 			}
-			otab.set(a, i, val)
+			otab.set(ba, i, val)
 		}
 	}
 	return &otab

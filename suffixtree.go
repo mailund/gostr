@@ -7,12 +7,21 @@ import (
 	"unsafe"
 )
 
+// EdgeLabel is the representation of a string along an edge.
+// It is a byte slice, so it takes up constant space, holding
+// only a pointer, length and capacity, while the underlying
+// string is shared between the edges in the tree.
 type EdgeLabel []byte
 
+// Revmap maps an EdgeLabel back to the underlying string. EdgeLabels
+// are represented as slices of bytes, mapped from a string through an
+// alphabet, and Revmap uses the alphabet to get the string back.
 func (el EdgeLabel) Revmap(alpha *Alphabet) string {
 	return alpha.RevmapBytes(el)
 }
 
+// STNodeType is a tag for identifying when we have leaves and when we
+// have inner nodes.
 type STNodeType int
 
 const (
@@ -25,39 +34,51 @@ const (
 	Inner         STNodeType = iota
 )
 
+// SharedNode contains the attributes that both leaves and inner nodes have.
 type SharedNode struct {
 	EdgeLabel
 	Parent *InnerNode
 }
 
+// LeafNode contains the additional properties that only leaves have.
 type LeafNode struct {
 	SharedNode
 	Index int
 }
 
+// InnerNode contains the additional properties that only inner nodes have.
 type InnerNode struct {
 	SharedNode
 	SuffixLink *InnerNode
 	Children   []STNode
 }
 
+// STNode wraps either a leaf or an inner node. Use the node type determine which,
+// before you access it as a node.
 type STNode struct {
 	NodeType STNodeType
 	ptr      unsafe.Pointer
 }
 
+// IsNil returns true if the node represents a nil pointer. If it does, you cannot
+// cast it to any other node type.
 func (n STNode) IsNil() bool {
 	return n.NodeType == UnInitialised
 }
 
+// Shared returns a pointer to the shared part of leaves and inner nodes. It is an
+// error to access a node if it IsNil(), but otherwise, you can get the shared part
+// of both leaves and inner nodes.
 func (n STNode) Shared() *SharedNode {
 	return (*SharedNode)(n.ptr)
 }
 
+// Leaf casts a node to a leaf. You should only do this if the NodeType is Leaf.
 func (n STNode) Leaf() *LeafNode {
 	return (*LeafNode)(n.ptr)
 }
 
+// Inner casts a node to a leaf. You should only do this if the NodeType is Inner.
 func (n STNode) Inner() *InnerNode {
 	return (*InnerNode)(n.ptr)
 }
@@ -91,18 +112,27 @@ func (n STNode) PathLabel(alpha *Alphabet) string {
 	return strings.Join(labels, "")
 }
 
-func (n STNode) LeafIndices(visitor func(int)) {
+// LeafIndices maps fn over all the leaf indices in the subtree
+// rooted at n.
+func (n STNode) LeafIndices(fn func(int)) {
 	switch n.NodeType {
 	case Leaf:
-		visitor(n.Leaf().Index)
+		fn(n.Leaf().Index)
 	case Inner:
 		for _, child := range n.Inner().Children {
-			child.LeafIndices(visitor)
+			child.LeafIndices(fn)
 		}
 	}
 }
 
-func (n STNode) ToDot(x []byte, alpha *Alphabet, w io.Writer) {
+// ToDot writes the subtree starting at n to w.
+//
+// Parameters:
+//   - alpha: The alphabet that was used to map the original string into
+//     the byte representation stored in the tree. You can get it from the
+//     suffix tree.
+//   - w: the output stream to write the dot representation to.
+func (n STNode) ToDot(alpha *Alphabet, w io.Writer) {
 	switch n.NodeType {
 	case Leaf:
 		v := n.Leaf()
@@ -124,7 +154,7 @@ func (n STNode) ToDot(x []byte, alpha *Alphabet, w io.Writer) {
 			fmt.Fprintf(w, `"%p" -> "%p"[style=dotted, color=red];`, v, v.SuffixLink)
 		}
 		for _, child := range v.Children {
-			child.ToDot(x, alpha, w)
+			child.ToDot(alpha, w)
 		}
 	}
 }
@@ -136,6 +166,7 @@ func (n *InnerNode) addChild(child STNode) {
 
 // -- Suffix tree --------------------------
 
+// SuffixTree is the representation of a suffix tree.
 type SuffixTree struct {
 	Alpha  *Alphabet
 	String []byte
@@ -166,9 +197,10 @@ func (st *SuffixTree) breakEdge(n STNode, depth, leafidx int, y []byte) STNode {
 	return new_leaf
 }
 
+// ToDot writes a dot representation of the tree to the output writer w.
 func (st *SuffixTree) ToDot(w io.Writer) {
 	fmt.Fprintln(w, `digraph { rankdir="LR" `)
-	st.Root.ToDot(st.String, st.Alpha, w)
+	st.Root.ToDot(st.Alpha, w)
 	fmt.Fprintln(w, "}")
 }
 
@@ -229,6 +261,7 @@ func sscan(n STNode, y []byte) (STNode, int, []byte) {
 	return sscan(v, y[i:])
 }
 
+// NaiveST is the naive O(n²) construction algorithm.
 func NaiveST(x_ string) *SuffixTree {
 	x, alpha := MapStringWithSentinel(x_)
 
@@ -272,6 +305,7 @@ func (v *SharedNode) suffix() []byte {
 	}
 }
 
+// McCreight constructs a suffix tree using McCreight's algorithm.
 func McCreight(x_ string) *SuffixTree {
 	x, alpha := MapStringWithSentinel(x_)
 	st := SuffixTree{Alpha: alpha, String: x}
@@ -330,6 +364,9 @@ func McCreight(x_ string) *SuffixTree {
 }
 
 // SECTION Generating other arrays
+
+// ComputeSuffixAndLcpArray constructs a suffix array and longest common prefix
+// array from a suffix tree.
 func (st *SuffixTree) ComputeSuffixAndLcpArray() (sa []int, lcp []int) {
 	sa = make([]int, len(st.String))
 	lcp = make([]int, len(st.String))
@@ -358,6 +395,7 @@ func (st *SuffixTree) ComputeSuffixAndLcpArray() (sa []int, lcp []int) {
 	return sa, lcp
 }
 
+// StSaConstruction constructs a suffix array from a suffix tree.
 func StSaConstruction(x string) []int {
 	sa, _ := McCreight(x).ComputeSuffixAndLcpArray()
 	return sa

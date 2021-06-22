@@ -29,9 +29,9 @@ func Test_Otab(t *testing.T) {
 	bwt := Bwt(x_, sa)
 	otab := NewOTab(bwt, alpha.Size())
 
-	expected_bwt := []byte{2, 0, 1, 1}
-	if !reflect.DeepEqual(bwt, expected_bwt) {
-		t.Fatalf("Expected bwt %v, got %v", expected_bwt, bwt)
+	expectedBwt := []byte{2, 0, 1, 1}
+	if !reflect.DeepEqual(bwt, expectedBwt) {
+		t.Fatalf("Expected bwt %v, got %v", expectedBwt, bwt)
 	}
 	expected := []int{
 		0, 0, 1, 2, // a row

@@ -5,12 +5,14 @@ import "fmt"
 const Sentinel = '\x00'
 const SentinelSymbol = rune('𝕊')
 
+// Alphabet handles mapping from strings to smaller alphabets of bytes.
 type Alphabet struct {
 	_map    [256]byte
 	_revmap [256]byte
 	size    int
 }
 
+// NewAlphabet creates an alphabet consisting of the bytes in ref only.
 func NewAlphabet(ref string) *Alphabet {
 	alpha := Alphabet{}
 
@@ -64,18 +66,31 @@ func (alpha *Alphabet) mapInts(x string, out []int) ([]int, error) {
 	return out, nil
 }
 
+// MapToBytes translates a string into a byte slice, mapping characters according
+// to the alphabet
 func (alpha *Alphabet) MapToBytes(x string) ([]byte, error) {
 	return alpha.mapBytes(x, make([]byte, len(x)))
 }
 
+// MapToBytesWithSentinel translates a string into a byte slice, mapping characters according
+// to the alphabet. The resulting byte slice has a terminal zero, acting as a sentinel.
 func (alpha *Alphabet) MapToBytesWithSentinel(x string) ([]byte, error) {
 	return alpha.mapBytes(x, make([]byte, len(x)+1))
 }
 
+// MapToInts translates a string into an integer slice, mapping characters according
+// to the alphabet. It only differs from MapToBytes in the type of the output, but is
+// used in algorithms where we need to operate on integers rather than the smaller
+// bytes.
 func (alpha *Alphabet) MapToInts(x string) ([]int, error) {
 	return alpha.mapInts(x, make([]int, len(x)))
 }
 
+// MapToIntsWithSentinel translates a string into an integer slice, mapping characters according
+// to the alphabet. The resulting int slice has a terminal zero, acting as a sentinel.
+// It only differs from MapToBytes in the type of the output, but is
+// used in algorithms where we need to operate on integers rather than the smaller
+// bytes.
 func (alpha *Alphabet) MapToIntsWithSentinel(x string) ([]int, error) {
 	return alpha.mapInts(x, make([]int, len(x)+1))
 }
@@ -96,20 +111,31 @@ func (alpha *Alphabet) revmapBytes(x []byte, strip_sentinel bool) string {
 	return string(out)
 }
 
+// RevmapBytes maps a byte slice back into a string according to the alphabet
+// that was used to translate the string into bytes in the first place.
 func (alpha *Alphabet) RevmapBytes(x []byte) string {
 	return alpha.revmapBytes(x, false)
 }
 
+// RevmapBytesStripSentinel maps a byte slice back into a string according to the alphabet
+// that was used to translate the string into bytes in the first place. RevmapBytesStripSentinel
+// will strip the last character in the input from the output, getting rid of a sentinel that
+// (hopefully) was added when the byte slice was created.
 func (alpha *Alphabet) RevmapBytesStripSentinel(x []byte) string {
 	return alpha.revmapBytes(x, true)
 }
 
+// MapString creates an alphabet from the input and then maps the string through it,
+// returning both resulting byte slice and alphabet.
 func MapString(x string) ([]byte, *Alphabet) {
 	alpha := NewAlphabet(x)
 	x_, _ := alpha.MapToBytes(x)
 	return x_, alpha
 }
 
+// MapStringWithSentinel creates an alphabet from the input and then maps the string through it,
+// returning both resulting byte slice and alphabet. Unlike MapString, MapStringWithSentinel
+// will add a terminal zero byte to the byte slice it returns.
 func MapStringWithSentinel(x string) ([]byte, *Alphabet) {
 	alpha := NewAlphabet(x)
 	x_, _ := alpha.MapToBytesWithSentinel(x)

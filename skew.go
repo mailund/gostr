@@ -6,7 +6,7 @@
 
 package gostr
 
-func safe_idx(x []int, i int) int {
+func safeIdx(x []int, i int) int {
 	if i >= len(x) {
 		return 0
 	} else {
@@ -29,7 +29,7 @@ func sa12len(n int) int {
 func symbcount(x []int, idx []int, offset int, asize int) []int {
 	counts := make([]int, asize)
 	for _, i := range idx {
-		counts[safe_idx(x, i+offset)]++
+		counts[safeIdx(x, i+offset)]++
 	}
 	return counts
 }
@@ -49,7 +49,7 @@ func bucketSort(x []int, asize int, idx []int, offset int) []int {
 	buckets := cumsum(counts)
 	out := make([]int, len(idx))
 	for _, i := range idx {
-		bucket := safe_idx(x, i+offset)
+		bucket := safeIdx(x, i+offset)
 		out[buckets[bucket]] = i
 		buckets[bucket]++
 	}
@@ -93,7 +93,7 @@ type triplet = [3]int
 type tripletMap = map[triplet]int
 
 func trip(x []int, i int) triplet {
-	return triplet{safe_idx(x, i), safe_idx(x, i+1), safe_idx(x, i+2)}
+	return triplet{safeIdx(x, i), safeIdx(x, i+1), safeIdx(x, i+2)}
 }
 
 func collectAlphabet(x []int, idx []int) tripletMap {
@@ -108,7 +108,7 @@ func collectAlphabet(x []int, idx []int) tripletMap {
 }
 
 func less(x []int, i int, j int, ISA map[int]int) bool {
-	a, b := safe_idx(x, i), safe_idx(x, j)
+	a, b := safeIdx(x, i), safeIdx(x, j)
 	if a < b {
 		return true
 	}
