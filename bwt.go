@@ -32,7 +32,7 @@ func (ctab *CTab) Rank(a byte) int {
 	return ctab.CumSum[a]
 }
 
-// Ctab builds the c-table from a string.
+// NewCtab builds the c-table from a string.
 func NewCTab(bwt []byte, asize int) *CTab {
 	// First, count how often we see each character
 	counts := make([]int, asize)
@@ -82,7 +82,7 @@ func (otab *OTab) Rank(a byte, i int) int {
 	return otab.get(a, i)
 }
 
-// Otab builds the o-table from a string. It uses
+// NewOtab builds the o-table from a string. It uses
 // the suffix array to get the BWT and a c-table
 // to handle the alphabet.
 func NewOTab(bwt []byte, asize int) *OTab {
@@ -133,6 +133,7 @@ func countLetters(x []byte) int {
 	return asize
 }
 
+// ReverseBwt reconstructs the original string from the bwt string.
 func ReverseBwt(bwt []byte) []byte {
 	asize := countLetters(bwt)
 	ctab := NewCTab(bwt, asize)
@@ -173,6 +174,8 @@ func BwtSearch(x, p []byte, ctab *CTab, otab *OTab) (left, right int) {
 	return left, right
 }
 
+// BwtPreprocess preprocesses the string x and returns a function
+// that you can use to efficiently search in x.
 func BwtPreprocess(x string) func(p string, cb func(i int)) {
 	xb, alpha := MapStringWithSentinel(x)
 	sa, _ := SaisWithAlphabet(x, alpha)

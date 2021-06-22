@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// NewRandomSeed creates a new random number generator
 func NewRandomSeed(tb testing.TB) *rand.Rand {
 	tb.Helper()
 
@@ -16,10 +17,7 @@ func NewRandomSeed(tb testing.TB) *rand.Rand {
 	return rand.New(rand.NewSource(seed))
 }
 
-/*
-	RandomString constructs a random string of
-	length in n, over the alphabet alpha.
-*/
+// RandomString constructs a random string of length in n, over the alphabet alpha.
 func RandomStringN(n int, alpha string, rng *rand.Rand) string {
 	bytes := make([]byte, n)
 	for i := 0; i < n; i++ {
@@ -29,19 +27,13 @@ func RandomStringN(n int, alpha string, rng *rand.Rand) string {
 	return string(bytes)
 }
 
-/*
-	RandomString constructs a random string of
-	length in [min, max), over the alphabet alpha.
-*/
+// RandomString constructs a random string of length in [min, max), over the alphabet alpha.
 func RandomStringRange(min, max int, alpha string, rng *rand.Rand) string {
 	n := min + rng.Intn(max-min)
 	return RandomStringN(n, alpha, rng)
 }
 
-/*
-	SingletonString generates a string of length n
-	consisting only of the letter a
-*/
+// SingletonString generates a string of length n consisting only of the letter a
 func SingletonString(n int, a byte) string {
 	bytes := make([]byte, n)
 	for i := 0; i < n; i++ {
@@ -51,23 +43,17 @@ func SingletonString(n int, a byte) string {
 	return string(bytes)
 }
 
-/*
-	PickRandomPrefix returns a random prefix of the string x.
-*/
+// PickRandomPrefix returns a random prefix of the string x.
 func PickRandomPrefix(x string, rng *rand.Rand) string {
 	return x[:rng.Intn(len(x))]
 }
 
-/*
-	PickRandomSufix returns a random sufix of the string x.
-*/
+// PickRandomSufix returns a random sufix of the string x.
 func PickRandomSuffix(x string, rng *rand.Rand) string {
 	return x[rng.Intn(len(x)):]
 }
 
-/*
-	PickRandomSubstring returns a random substring of the string x.
-*/
+// PickRandomSubstring returns a random substring of the string x.
 func PickRandomSubstring(x string, rng *rand.Rand) string {
 	i := rng.Intn(len(x) - 1)
 	j := rng.Intn(len(x) - i)
@@ -75,10 +61,8 @@ func PickRandomSubstring(x string, rng *rand.Rand) string {
 	return x[i : i+j]
 }
 
-/*
-	GenerateTestStrings generates strings of length between
-	min and max and calls callback with them.
-*/
+// GenerateTestStrings generates strings of length between
+// min and max and calls callback with them.
 func GenerateRandomTestStrings(
 	min, max int,
 	rng *rand.Rand,
@@ -89,10 +73,8 @@ func GenerateRandomTestStrings(
 	}
 }
 
-/*
-	GenerateSingletonTestStrings generate singeton strings with length
-	between min and max
-*/
+// GenerateSingletonTestStrings generate singeton strings with length
+// between min and max
 func GenerateSingletonTestStrings(
 	min, max int,
 	rng *rand.Rand,
@@ -105,10 +87,8 @@ func GenerateSingletonTestStrings(
 	}
 }
 
-/*
-	GenerateTestStrings generates strings of length between
-	min and max and calls callback with them.
-*/
+// GenerateTestStrings generates strings of length between min
+// and max and calls callback with them.
 func GenerateTestStrings(
 	min, max int,
 	rng *rand.Rand,
@@ -117,6 +97,8 @@ func GenerateTestStrings(
 	GenerateSingletonTestStrings(min, max, rng, callback)
 }
 
+// GenerateTestStringsAndPatterns generates a set of strings (x, p) where x is a string
+// to search in and p is a string to search for.
 func GenerateTestStringsAndPatterns(min, max int, rng *rand.Rand, callback func(x, p string)) {
 	GenerateRandomTestStrings(min, max, rng,
 		func(x string) {

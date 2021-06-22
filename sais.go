@@ -296,6 +296,8 @@ func recSais(x, sa []int32, asize int, isS *bitArray) {
 	induceLS(x, sa, buckets, bucketEnds, isS)
 }
 
+// SaisWithAlphabet builds a suffix array from the string x, first
+// mapping it to bytes using the alphabet alpha.
 func SaisWithAlphabet(x string, alpha *Alphabet) ([]int32, error) {
 	xb, err := alpha.MapToIntsWithSentinel(x)
 	if err != nil {
@@ -310,6 +312,7 @@ func SaisWithAlphabet(x string, alpha *Alphabet) ([]int32, error) {
 	return sa, nil
 }
 
+// Sais builds a suffix array from the string x
 func Sais(x string) (sa []int32) {
 	sa, _ = SaisWithAlphabet(x, NewAlphabet(x))
 	return sa

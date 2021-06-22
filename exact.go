@@ -177,7 +177,7 @@ func BmhWithMap(x, p string, callback func(int)) {
 	}
 }
 
-// Bmh runs the O(nm) worst-case but expected sub-linear time
+// BmhWithAlphabet runs the O(nm) worst-case but expected sub-linear time
 // Boyer-Moore-Horspool algorithm. This version maps the input
 // strings before search, so we know their alphabet size, and can
 // create a jump table of the apprporiate size.

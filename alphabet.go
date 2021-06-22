@@ -1,7 +1,13 @@
 package gostr
 
-const Sentinel = '\x00'
-const SentinelSymbol = rune('𝕊')
+const (
+	// Sentinel is a unique byte (zero) used in several algorithms
+	// to be different and smaller than all other letters.
+	Sentinel = '\x00'
+	// SentinelSymbol is a rune you can use to display the sentinel
+	// when you translate byte slices into strings.
+	SentinelSymbol = rune('𝕊')
+)
 
 // Alphabet handles mapping from strings to smaller alphabets of bytes.
 type Alphabet struct {
