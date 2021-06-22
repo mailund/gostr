@@ -1,7 +1,5 @@
 package gostr
 
-import "fmt"
-
 const Sentinel = '\x00'
 const SentinelSymbol = rune('𝕊')
 
@@ -21,7 +19,8 @@ func NewAlphabet(ref string) *Alphabet {
 		alpha._map[ref[i]] = 1
 	}
 
-	var n byte = 0
+	var n byte // tracks alphabet size...
+
 	for a, tag := range alpha._map {
 		if tag == 1 {
 			alpha._map[a] = n
@@ -29,6 +28,7 @@ func NewAlphabet(ref string) *Alphabet {
 			n++
 		}
 	}
+
 	alpha.size = int(n)
 
 	return &alpha
@@ -51,10 +51,12 @@ func (alpha *Alphabet) mapBytes(x string, out []byte) ([]byte, error) {
 	for i := 0; i < len(x); i++ {
 		b := alpha._map[x[i]]
 		if b == 0 && x[i] != 0 {
-			return []byte{}, fmt.Errorf("character %q is not in the alphabet", x[i])
+			return []byte{}, &AlphabetLookupError{b}
 		}
+
 		out[i] = b
 	}
+
 	return out, nil
 }
 
@@ -62,10 +64,12 @@ func (alpha *Alphabet) mapInts(x string, out []int32) ([]int32, error) {
 	for i := 0; i < len(x); i++ {
 		b := alpha._map[x[i]]
 		if b == 0 && x[i] != 0 {
-			return []int32{}, fmt.Errorf("character %q is not in the alphabet", x[i])
+			return []int32{}, &AlphabetLookupError{b}
 		}
+
 		out[i] = int32(b)
 	}
+
 	return out, nil
 }
 
@@ -98,12 +102,14 @@ func (alpha *Alphabet) MapToIntsWithSentinel(x string) ([]int32, error) {
 	return alpha.mapInts(x, make([]int32, len(x)+1))
 }
 
-func (alpha *Alphabet) revmapBytes(x []byte, strip_sentinel bool) string {
+func (alpha *Alphabet) revmapBytes(x []byte, stripSentinel bool) string {
 	strip := 0 // If we have a sentinel, we remove it again
-	if strip_sentinel && len(x) > 0 && x[len(x)-1] == 0 {
+	if stripSentinel && len(x) > 0 && x[len(x)-1] == 0 {
 		strip++
 	}
+
 	out := make([]rune, len(x)-strip)
+
 	for i := 0; i < len(out); i++ {
 		if x[i] == Sentinel {
 			out[i] = SentinelSymbol
@@ -111,6 +117,7 @@ func (alpha *Alphabet) revmapBytes(x []byte, strip_sentinel bool) string {
 			out[i] = rune(alpha._revmap[x[i]])
 		}
 	}
+
 	return string(out)
 }
 
@@ -132,8 +139,9 @@ func (alpha *Alphabet) RevmapBytesStripSentinel(x []byte) string {
 // returning both resulting byte slice and alphabet.
 func MapString(x string) ([]byte, *Alphabet) {
 	alpha := NewAlphabet(x)
-	x_, _ := alpha.MapToBytes(x)
-	return x_, alpha
+	xb, _ := alpha.MapToBytes(x)
+
+	return xb, alpha
 }
 
 // MapStringWithSentinel creates an alphabet from the input and then maps the string through it,
@@ -141,6 +149,7 @@ func MapString(x string) ([]byte, *Alphabet) {
 // will add a terminal zero byte to the byte slice it returns.
 func MapStringWithSentinel(x string) ([]byte, *Alphabet) {
 	alpha := NewAlphabet(x)
-	x_, _ := alpha.MapToBytesWithSentinel(x)
-	return x_, alpha
+	xb, _ := alpha.MapToBytesWithSentinel(x)
+
+	return xb, alpha
 }

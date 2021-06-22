@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	var main *cli.Command = cli.NewMenu(
+	var main = cli.NewMenu(
 		"gostr", "run gostr commands", "",
 		ShowMenu())
 

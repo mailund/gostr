@@ -22,6 +22,7 @@ func IsPrefix(x, y string) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -37,11 +38,14 @@ func OccurrenceAt(x, p string, i int) bool {
 	an error to t otherwise
 */
 func CheckOccurrenceAt(t *testing.T, x, p string, i int) bool {
+	t.Helper()
+
 	result := OccurrenceAt(x, p, i)
 	if !result {
 		t.Errorf(`We have an incorrect match: "%s" doesn't match "%s"`,
 			p, x[i:])
 	}
+
 	return result
 }
 
@@ -50,13 +54,18 @@ func CheckOccurrenceAt(t *testing.T, x, p string, i int) bool {
 	in occ. Reports an error to t otherwise
 */
 func CheckAllOccurrences(t *testing.T, x, p string, occ []int) bool {
+	t.Helper()
+
 	result := true
+
 	for _, i := range occ {
 		if !OccurrenceAt(x, p, i) {
 			t.Errorf(`We have an incorrect match: "%s" doesn't match "%s"`,
 				p, x[i:])
+
 			result = false
 		}
 	}
+
 	return result
 }

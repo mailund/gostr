@@ -14,10 +14,12 @@ type exactAlgo = func(x, p string, cb func(int))
 func exactWrapper(algo exactAlgo) exactFunc {
 	return func(x, p string) []int {
 		res := []int{}
+
 		algo(x, p, func(i int) {
 			res = append(res, i)
 		})
 		sort.Ints(res)
+
 		return res
 	}
 }
@@ -35,7 +37,7 @@ func stWrapper(algo func(string) *gostr.SuffixTree) func(x, p string, cb func(in
 	}
 }
 
-var exact_algorithms = map[string]exactAlgo{
+var exactAlgorithms = map[string]exactAlgo{
 	"Naive":        gostr.Naive,
 	"BorderSearch": gostr.BorderSearch,
 	"KMP":          gostr.Kmp,
@@ -49,10 +51,13 @@ var exact_algorithms = map[string]exactAlgo{
 
 func runBasicExactTests(algo exactAlgo) func(*testing.T) {
 	return func(t *testing.T) {
+		t.Helper()
+
 		type args struct {
 			x string
 			p string
 		}
+
 		tests := []struct {
 			name     string
 			args     args
@@ -101,13 +106,15 @@ func runBasicExactTests(algo exactAlgo) func(*testing.T) {
 }
 
 func TestBasicExact(t *testing.T) {
-	for name, algo := range exact_algorithms {
+	for name, algo := range exactAlgorithms {
 		t.Run(name, runBasicExactTests(algo))
 	}
 }
 
 func runRandomExactOccurencesTests(algo exactAlgo) func(*testing.T) {
 	return func(t *testing.T) {
+		t.Helper()
+
 		rng := test.NewRandomSeed(t)
 		test.GenerateTestStringsAndPatterns(100, 200, rng,
 			func(x, p string) {
@@ -120,13 +127,16 @@ func runRandomExactOccurencesTests(algo exactAlgo) func(*testing.T) {
 }
 
 func TestRandomExactOccurences(t *testing.T) {
-	for name, algo := range exact_algorithms {
+	t.Helper()
+
+	for name, algo := range exactAlgorithms {
 		t.Run(name, runRandomExactOccurencesTests(algo))
 	}
 }
 
-func runCheckExactOccurencesEqual(expected exactAlgo, algo exactAlgo) func(*testing.T) {
+func runCheckExactOccurencesEqual(expected, algo exactAlgo) func(*testing.T) {
 	return func(t *testing.T) {
+		t.Helper()
 		rng := test.NewRandomSeed(t)
 		test.GenerateTestStringsAndPatterns(100, 200, rng,
 			func(x, p string) {
@@ -141,8 +151,8 @@ func runCheckExactOccurencesEqual(expected exactAlgo, algo exactAlgo) func(*test
 }
 
 func TestExactEqual(t *testing.T) {
-	naive := exact_algorithms["Naive"]
-	for name, algo := range exact_algorithms {
+	naive := exactAlgorithms["Naive"]
+	for name, algo := range exactAlgorithms {
 		t.Run(name, runCheckExactOccurencesEqual(naive, algo))
 	}
 }

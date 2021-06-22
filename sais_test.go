@@ -15,6 +15,7 @@ func Test_newBitArray(t *testing.T) {
 		{"1", []bool{true}},
 		{"010", []bool{false, true, false}},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := newBitArray(len(tt.bits), tt.bits...)
@@ -30,12 +31,15 @@ func Test_newBitArray(t *testing.T) {
 			}
 		})
 	}
+
 	for i := 0; i < 67; i++ {
 		bv := newBitArray(i)
+
 		if 8*len(bv.bytes) < i {
 			t.Errorf("There are not enough bytes (%d) in the bit-array to hold %d bits.\n",
 				len(bv.bytes), i)
 		}
+
 		if i <= 8*(len(bv.bytes)-1) {
 			t.Errorf("There are too many bytes (%d) in the bit-array to hold %d bits.\n",
 				len(bv.bytes), i)
@@ -51,6 +55,7 @@ func Test_classifyST(t *testing.T) {
 	type args struct {
 		x []int32
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -60,6 +65,7 @@ func Test_classifyST(t *testing.T) {
 		{`String "a$"`, args{[]int32{1, 0}}, []bool{false, true}},
 		{`String "ab$"`, args{[]int32{1, 2, 0}}, []bool{true, false, true}},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			isS := newBitArray(len(tt.args.x))
@@ -82,6 +88,7 @@ func Test_countBuckets(t *testing.T) {
 		x     []int32
 		asize int
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -91,6 +98,7 @@ func Test_countBuckets(t *testing.T) {
 		{`"abc$"`, args{[]int32{1, 2, 3, 0}, 4}, []int32{1, 1, 1, 1}},
 		{`"aba$"`, args{[]int32{1, 2, 1, 0}, 3}, []int32{1, 2, 1}},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := countBuckets(tt.args.x, tt.args.asize); !reflect.DeepEqual(got, tt.want) {
@@ -104,6 +112,7 @@ func Test_bucketsFronts(t *testing.T) {
 	type args struct {
 		buckets []int32
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -112,6 +121,7 @@ func Test_bucketsFronts(t *testing.T) {
 		{`Singleton`, args{[]int32{1}}, []int32{0}},
 		{`[1, 2, 3]`, args{[]int32{1, 2, 3}}, []int32{0, 1, 3}},
 	}
+
 	for _, tt := range tests {
 		buf := make([]int32, len(tt.args.buckets))
 		t.Run(tt.name, func(t *testing.T) {
@@ -127,6 +137,7 @@ func Test_bucketsEnd(t *testing.T) {
 	type args struct {
 		buckets []int32
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -135,6 +146,7 @@ func Test_bucketsEnd(t *testing.T) {
 		{`Singleton`, args{buckets: []int32{1}}, []int32{1}},
 		{`[1, 2, 3]`, args{buckets: []int32{1, 2, 3}}, []int32{1, 3, 6}},
 	}
+
 	for _, tt := range tests {
 		buf := make([]int32, len(tt.args.buckets))
 		t.Run(tt.name, func(t *testing.T) {
@@ -151,6 +163,7 @@ func Test_isLMS(t *testing.T) {
 		isS *bitArray
 		i   int32
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -158,6 +171,7 @@ func Test_isLMS(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := isLMS(tt.args.isS, tt.args.i); got != tt.want {
@@ -173,12 +187,14 @@ func Test_recSAIS(t *testing.T) {
 		SA    []int32
 		asize int
 	}
+
 	tests := []struct {
 		name string
 		args args
 	}{
 		// TODO: Add test cases.
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			isS := newBitArray(len(tt.args.x))
@@ -193,6 +209,7 @@ func Test_equalLMS(t *testing.T) {
 		i int32
 		j int32
 	}
+
 	tests := []struct {
 		name string
 		args args
@@ -208,6 +225,7 @@ func Test_equalLMS(t *testing.T) {
 			args{[]int32{2, 1, 1, 0}, 0, 4},
 			false},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			isS := newBitArray(len(tt.args.x))

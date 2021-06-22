@@ -10,7 +10,7 @@ import (
 
 type SAAlgo = func(x string) []int32
 
-var sa_algorithms = map[string]SAAlgo{
+var saAlgorithms = map[string]SAAlgo{
 	"Skew":       gostr.Skew,
 	"Sais":       gostr.Sais,
 	"SuffixTree": gostr.StSaConstruction,
@@ -18,6 +18,8 @@ var sa_algorithms = map[string]SAAlgo{
 
 func runBasicTest(algo SAAlgo) func(*testing.T) {
 	return func(t *testing.T) {
+		t.Helper()
+
 		tests := []struct {
 			name   string
 			x      string
@@ -41,13 +43,17 @@ func runBasicTest(algo SAAlgo) func(*testing.T) {
 }
 
 func Test_SuffixArraysBasic(t *testing.T) {
-	for name, algo := range sa_algorithms {
+	t.Helper()
+
+	for name, algo := range saAlgorithms {
 		t.Run(name, runBasicTest(algo))
 	}
 }
 
 func runConsistencyTest(algo SAAlgo) func(*testing.T) {
 	return func(t *testing.T) {
+		t.Helper()
+
 		rng := test.NewRandomSeed(t)
 		test.GenerateTestStrings(50, 150, rng,
 			func(x string) {
@@ -57,7 +63,7 @@ func runConsistencyTest(algo SAAlgo) func(*testing.T) {
 }
 
 func Test_SuffixArraysConsistency(t *testing.T) {
-	for name, algo := range sa_algorithms {
+	for name, algo := range saAlgorithms {
 		t.Run(name, runConsistencyTest(algo))
 	}
 }
@@ -65,9 +71,11 @@ func Test_SuffixArraysConsistency(t *testing.T) {
 func Test_AlphabetErrors(t *testing.T) {
 	alpha := gostr.NewAlphabet("foo")
 	x := "bar" // wrong alphabet
+
 	if _, err := gostr.SaisWithAlphabet(x, alpha); err == nil {
 		t.Error("Expected an error making Sais SA")
 	}
+
 	if _, err := gostr.SkewWithAlphabet(x, alpha); err == nil {
 		t.Error("Expected an error making Skew SA")
 	}
