@@ -48,7 +48,7 @@ func PickRandomPrefix(x string, rng *rand.Rand) string {
 	return x[:rng.Intn(len(x))]
 }
 
-// PickRandomSufix returns a random sufix of the string x.
+// PickRandomSuffix returns a random sufix of the string x.
 func PickRandomSuffix(x string, rng *rand.Rand) string {
 	return x[rng.Intn(len(x)):]
 }

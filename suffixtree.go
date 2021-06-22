@@ -30,8 +30,8 @@ const (
 	// but only handle Leaf and Inner, and you skip the
 	// nil nodes that way.
 	UnInitialised STNodeType = iota
-	Leaf          STNodeType = iota
-	Inner         STNodeType = iota
+	Leaf          STNodeType = iota // Leaf means that the node is a leaf
+	Inner         STNodeType = iota // Inner means that the node is an inner node
 )
 
 // SharedNode contains the attributes that both leaves and inner nodes have.

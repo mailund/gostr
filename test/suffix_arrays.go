@@ -42,11 +42,9 @@ func CheckSAIndices(t *testing.T, x string, sa []int32) bool {
 	return true
 }
 
-/*
-	CheckSASorted checks if a suffix array sa actually
-	represents the sorted suffix in the string x. Reports
-	errors to t.
-*/
+// CheckSASorted checks if a suffix array sa actually
+// represents the sorted suffix in the string x. Reports
+// errors to t.
 func CheckSASorted(t *testing.T, x string, sa []int32) bool {
 	t.Helper()
 
@@ -64,10 +62,8 @@ func CheckSASorted(t *testing.T, x string, sa []int32) bool {
 	return result
 }
 
-/*
-	CheckSuffixArray runs all the consistency checks for
-	suffix array sa over string x, reporting errors to t.
-*/
+// CheckSuffixArray runs all the consistency checks for
+// suffix array sa over string x, reporting errors to t.
 func CheckSuffixArray(t *testing.T, x string, sa []int32) bool {
 	t.Helper()
 

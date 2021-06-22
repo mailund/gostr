@@ -5,17 +5,12 @@ import (
 	"testing"
 )
 
-/*
-	IntArraysEqual tests if arrays a and b are equal.
-*/
+// IntArraysEqual tests if arrays a and b are equal.
 func IntArraysEqual(a, b []int) bool {
 	return reflect.DeepEqual(a, b)
 }
 
-/*
-	IsPrefix tests if string x is a prefix of y, reporting
-	an error to t if it finds a difference.
-*/
+// IsPrefix tests if string x is a prefix of y
 func IsPrefix(x, y string) bool {
 	for i := range x {
 		if x[i] != y[i] {
@@ -26,17 +21,13 @@ func IsPrefix(x, y string) bool {
 	return true
 }
 
-/*
-	OccurrenceAt returns if string p occurrs at index i in string x.
-*/
+// OccurrenceAt returns if string p occurrs at index i in string x.
 func OccurrenceAt(x, p string, i int) bool {
 	return IsPrefix(p, x[i:])
 }
 
-/*
-	CheckOccurrenceAt tests if string p occurrs at index i in string x and reports
-	an error to t otherwise
-*/
+// CheckOccurrenceAt tests if string p occurrs at index i in string x and reports
+// an error to t otherwise
 func CheckOccurrenceAt(t *testing.T, x, p string, i int) bool {
 	t.Helper()
 
@@ -49,10 +40,8 @@ func CheckOccurrenceAt(t *testing.T, x, p string, i int) bool {
 	return result
 }
 
-/*
-	CheckAllOccurrences Tests if string p occurrs at all indices
-	in occ. Reports an error to t otherwise
-*/
+// CheckAllOccurrences Tests if string p occurrs at all indices
+// in occ. Reports an error to t otherwise
 func CheckAllOccurrences(t *testing.T, x, p string, occ []int) bool {
 	t.Helper()
 
