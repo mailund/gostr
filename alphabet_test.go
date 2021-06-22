@@ -1,9 +1,11 @@
-package gostr
+package gostr_test
 
 import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/mailund/gostr"
 )
 
 func checkAlphabet(
@@ -11,7 +13,7 @@ func checkAlphabet(
 	letters []byte, expectedMapped []byte) {
 	t.Helper()
 
-	alpha := NewAlphabet(x)
+	alpha := gostr.NewAlphabet(x)
 	if alpha.Size() != len(letters)+1 { // +1 for sentinel
 		t.Fatalf("Expected size %d, got %d", len(letters)+1, alpha.Size())
 	}
@@ -23,21 +25,10 @@ func checkAlphabet(
 		}
 	}
 
-	for i, a := range letters {
-		if alpha._map[a] != byte(i+1) {
-			t.Fatalf("Expected %c to map to %d", a, i+1)
-		}
-	}
-
-	for i := 0; i < 256; i++ {
-		a := alpha._revmap[alpha._map[byte(i)]]
-		if a != 0 && a != byte(i) {
-			t.Fatalf("Mapping %c and then reversing doesn't give %c back", byte(i), byte(i))
-		}
-
-		b := alpha._map[alpha._revmap[byte(i)]]
-		if b != 0 && b != byte(i) {
-			t.Fatalf("Reverse-mapping %c and then forward doesn't give %c back", byte(i), byte(i))
+	bytes, _ := alpha.MapToBytes(string(letters))
+	for i, b := range bytes {
+		if b != byte(i+1) {
+			t.Fatalf("Expected %c to map to %d", b, i+1)
 		}
 	}
 
@@ -50,7 +41,7 @@ func checkAlphabet(
 		t.Fatalf("We expected the mapped string to be %v but it is %v", expectedMapped, y)
 	}
 
-	xx := strings.ReplaceAll(x, string(Sentinel), string(SentinelSymbol))
+	xx := strings.ReplaceAll(x, string(gostr.Sentinel), string(gostr.SentinelSymbol))
 
 	z := alpha.RevmapBytesStripSentinel(y)
 	if !reflect.DeepEqual(xx, z) {
@@ -62,14 +53,14 @@ func checkAlphabet(
 		t.Fatalf(`Strings "%s" and "%s" should be equal`, z, zz)
 	}
 
-	if zz != z+string(SentinelSymbol) {
+	if zz != z+string(gostr.SentinelSymbol) {
 		t.Fatalf(`The last character in "%s" should be sentinel`, zz)
 	}
 
 	checkAlphabetInt(t, x, alpha, y, expectedMapped)
 }
 
-func checkAlphabetInt(t *testing.T, x string, alpha *Alphabet, y, expectedMapped []byte) {
+func checkAlphabetInt(t *testing.T, x string, alpha *gostr.Alphabet, y, expectedMapped []byte) {
 	t.Helper()
 
 	expectedInts := make([]int32, len(expectedMapped))
@@ -98,7 +89,7 @@ func Test_Alphabet(t *testing.T) {
 	checkAlphabet(t, "foo\x00bar", []byte{'a', 'b', 'f', 'o', 'r'}, []byte{3, 4, 4, 0, 2, 1, 5, 0})
 
 	// See what happens if we try to map a string with the wrong alphabet.
-	alpha := NewAlphabet("foo")
+	alpha := gostr.NewAlphabet("foo")
 	if _, err := alpha.MapToBytes("foobar"); err == nil {
 		t.Fatalf("Expected an error when mapping to an alphabet that doesn't match")
 	}

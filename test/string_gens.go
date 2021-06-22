@@ -17,7 +17,7 @@ func NewRandomSeed(tb testing.TB) *rand.Rand {
 	return rand.New(rand.NewSource(seed))
 }
 
-// RandomString constructs a random string of length in n, over the alphabet alpha.
+// RandomStringN constructs a random string of length in n, over the alphabet alpha.
 func RandomStringN(n int, alpha string, rng *rand.Rand) string {
 	bytes := make([]byte, n)
 	for i := 0; i < n; i++ {
@@ -27,7 +27,7 @@ func RandomStringN(n int, alpha string, rng *rand.Rand) string {
 	return string(bytes)
 }
 
-// RandomString constructs a random string of length in [min, max), over the alphabet alpha.
+// RandomStringRange constructs a random string of length in [min, max), over the alphabet alpha.
 func RandomStringRange(min, max int, alpha string, rng *rand.Rand) string {
 	n := min + rng.Intn(max-min)
 	return RandomStringN(n, alpha, rng)
@@ -61,7 +61,7 @@ func PickRandomSubstring(x string, rng *rand.Rand) string {
 	return x[i : i+j]
 }
 
-// GenerateTestStrings generates strings of length between
+// GenerateRandomTestStrings generates strings of length between
 // min and max and calls callback with them.
 func GenerateRandomTestStrings(
 	min, max int,

@@ -32,7 +32,7 @@ func (ctab *CTab) Rank(a byte) int {
 	return ctab.CumSum[a]
 }
 
-// NewCtab builds the c-table from a string.
+// NewCTab builds the c-table from a string.
 func NewCTab(bwt []byte, asize int) *CTab {
 	// First, count how often we see each character
 	counts := make([]int, asize)
@@ -82,7 +82,7 @@ func (otab *OTab) Rank(a byte, i int) int {
 	return otab.get(a, i)
 }
 
-// NewOtab builds the o-table from a string. It uses
+// NewOTab builds the o-table from a string. It uses
 // the suffix array to get the BWT and a c-table
 // to handle the alphabet.
 func NewOTab(bwt []byte, asize int) *OTab {

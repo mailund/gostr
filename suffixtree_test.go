@@ -1,4 +1,4 @@
-package gostr
+package gostr_test
 
 import (
 	"log"
@@ -7,14 +7,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mailund/gostr"
 	"github.com/mailund/gostr/test"
 )
 
-func checkPathLabels(t *testing.T, n STNode, algo string, st *SuffixTree) {
+func checkPathLabels(t *testing.T, n gostr.STNode, algo string, st *gostr.SuffixTree) {
 	t.Helper()
 
 	switch n.NodeType {
-	case Leaf:
+	case gostr.Leaf:
 		v := n.Leaf()
 		if n.PathLabel(st.Alpha) != st.Alpha.RevmapBytes(st.String[v.Index:]) {
 			t.Errorf(`%s(%s): the path label of leaf %d should be "%s" but is "%s"`,
@@ -24,21 +25,21 @@ func checkPathLabels(t *testing.T, n STNode, algo string, st *SuffixTree) {
 				n.PathLabel(st.Alpha))
 		}
 
-	case Inner:
+	case gostr.Inner:
 		for _, child := range n.Inner().Children {
-			if child.NodeType != UnInitialised {
+			if child.NodeType != gostr.UnInitialised {
 				checkPathLabels(t, child, algo, st)
 			}
 		}
 
-	case UnInitialised:
+	case gostr.UnInitialised:
 		// do nothing
 		break
 	}
 }
 
 func testSuffixTree(t *testing.T, algo string,
-	construction func(string) *SuffixTree, x string) *SuffixTree {
+	construction func(string) *gostr.SuffixTree, x string) *gostr.SuffixTree {
 	t.Helper()
 
 	st := construction(x)
@@ -79,7 +80,7 @@ func testSuffixTree(t *testing.T, algo string,
 	return st
 }
 
-func testSearchMatch(t *testing.T, algo string, st *SuffixTree, p string) {
+func testSearchMatch(t *testing.T, algo string, st *gostr.SuffixTree, p string) {
 	t.Helper()
 
 	st.Search(p, func(i int) {
@@ -92,7 +93,7 @@ func testSearchMatch(t *testing.T, algo string, st *SuffixTree, p string) {
 	})
 }
 
-func testSearchMismatch(t *testing.T, algo string, st *SuffixTree, p string) {
+func testSearchMismatch(t *testing.T, algo string, st *gostr.SuffixTree, p string) {
 	t.Helper()
 
 	st.Search(p, func(i int) {
@@ -101,7 +102,7 @@ func testSearchMismatch(t *testing.T, algo string, st *SuffixTree, p string) {
 	})
 }
 
-func testSearchMississippi(t *testing.T, algo string, st *SuffixTree) {
+func testSearchMississippi(t *testing.T, algo string, st *gostr.SuffixTree) {
 	t.Helper()
 
 	testSearchMatch(t, algo, st, "ssi")
@@ -111,7 +112,7 @@ func testSearchMississippi(t *testing.T, algo string, st *SuffixTree) {
 
 func Test_NaiveConstruction(t *testing.T) {
 	x := "mississippi"
-	st := testSuffixTree(t, "NaiveST", NaiveST, x)
+	st := testSuffixTree(t, "NaiveST", gostr.NaiveST, x)
 	testSearchMississippi(t, "NaiveST", st)
 
 	f, err := os.Create("naive-dot.dot")
@@ -125,7 +126,7 @@ func Test_NaiveConstruction(t *testing.T) {
 
 func Test_McCreightConstruction(t *testing.T) {
 	x := "mississippi"
-	st := testSuffixTree(t, "McCreight", McCreight, x)
+	st := testSuffixTree(t, "McCreight", gostr.McCreight, x)
 	testSearchMississippi(t, "McCreight", st)
 
 	f, err := os.Create("mccreight-dot.dot")
@@ -139,7 +140,7 @@ func Test_McCreightConstruction(t *testing.T) {
 
 func Test_STRandomStrings(t *testing.T) {
 	algos := []string{"NaiveST", "McCreight"}
-	constructors := []func(string) *SuffixTree{NaiveST, McCreight}
+	constructors := []func(string) *gostr.SuffixTree{gostr.NaiveST, gostr.McCreight}
 
 	seed := time.Now().UTC().UnixNano()
 	t.Logf("Random seed: %d", seed)

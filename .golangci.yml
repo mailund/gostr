@@ -1,9 +1,11 @@
 linters-settings:
   errcheck:
     check-type-assertions: true
+
   goconst:
     min-len: 2
-    min-occurrences: 3
+    min-occurrences: 5
+
   gocritic:
     enabled-tags:
       - diagnostic
@@ -11,11 +13,16 @@ linters-settings:
       - opinionated
       - performance
       - style
+
   govet:
     check-shadowing: true
+
   nolintlint:
     require-explanation: true
     require-specific: true
+
+  testpackage:
+    skip-regexp: internal_test\.go
 
 linters:
   disable-all: true
@@ -39,6 +46,7 @@ linters:
     - gocyclo
     - gosimple
     - govet
+    - ifshort
     - ineffassign
     - importas
     - misspell
@@ -51,12 +59,15 @@ linters:
     - staticcheck
     - structcheck
     - stylecheck
+    - testpackage
     - thelper
     - tparallel
     - typecheck
     - unconvert
     - unparam
+    - unused
     - varcheck
+    - wastedassign
     - whitespace
     - wsl
 

@@ -1,8 +1,9 @@
-package gostr
+package gostr_test
 
 import (
 	"testing"
 
+	"github.com/mailund/gostr"
 	"github.com/mailund/gostr/test"
 )
 
@@ -17,24 +18,24 @@ func benchmarkSAconstruction(b *testing.B, constr func(string) []int32, n int) {
 }
 
 func BenchmarkSkew10000(b *testing.B) {
-	benchmarkSAconstruction(b, Skew, 10000)
+	benchmarkSAconstruction(b, gostr.Skew, 10000)
 }
 
 func BenchmarkSkew100000(b *testing.B) {
-	benchmarkSAconstruction(b, Skew, 100000)
+	benchmarkSAconstruction(b, gostr.Skew, 100000)
 }
 
 func BenchmarkSkew1000000(b *testing.B) {
-	benchmarkSAconstruction(b, Skew, 1000000)
+	benchmarkSAconstruction(b, gostr.Skew, 1000000)
 }
 
 func BenchmarkSais10000(b *testing.B) {
-	benchmarkSAconstruction(b, Sais, 10000)
+	benchmarkSAconstruction(b, gostr.Sais, 10000)
 }
 func BenchmarkSais100000(b *testing.B) {
-	benchmarkSAconstruction(b, Sais, 100000)
+	benchmarkSAconstruction(b, gostr.Sais, 100000)
 }
 
 func BenchmarkSais1000000(b *testing.B) {
-	benchmarkSAconstruction(b, Sais, 1000000)
+	benchmarkSAconstruction(b, gostr.Sais, 1000000)
 }

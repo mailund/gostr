@@ -1,9 +1,10 @@
-package gostr
+package gostr_test
 
 import (
 	"reflect"
 	"testing"
 
+	"github.com/mailund/gostr"
 	"github.com/mailund/gostr/test"
 )
 
@@ -20,7 +21,7 @@ func Test_BorderarrayBasics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := Borderarray(tt.x); !reflect.DeepEqual(got, tt.want) {
+			if got := gostr.Borderarray(tt.x); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Borderarray() = %v, want %v", got, tt.want)
 			}
 		})
@@ -40,7 +41,7 @@ func Test_StrictBorderarrayBasics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := StrictBorderarray(tt.x); !reflect.DeepEqual(got, tt.want) {
+			if got := gostr.StrictBorderarray(tt.x); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("StrictBorderarray() = %v, want %v", got, tt.want)
 			}
 		})
@@ -63,7 +64,7 @@ func Test_Borderarray(t *testing.T) {
 	rng := test.NewRandomSeed(t)
 	test.GenerateTestStrings(10, 20, rng,
 		func(x string) {
-			checkBorders(t, x, Borderarray(x))
+			checkBorders(t, x, gostr.Borderarray(x))
 		})
 }
 
@@ -87,7 +88,7 @@ func Test_StrictBorderarray(t *testing.T) {
 	rng := test.NewRandomSeed(t)
 	test.GenerateTestStrings(10, 20, rng,
 		func(x string) {
-			ba := StrictBorderarray(x)
+			ba := gostr.StrictBorderarray(x)
 			checkBorders(t, x, ba)
 			checkStrict(t, x, ba)
 		})

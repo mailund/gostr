@@ -7,6 +7,8 @@ import (
 	"github.com/mailund/gostr"
 )
 
+// ShowSuffixTreeCommand displays a suffix tree as a dot file for
+// visualisation
 func ShowSuffixTreeCommand() *cli.Command {
 	init := func(cmd *cli.Command) func() {
 		var x string
@@ -20,6 +22,7 @@ func ShowSuffixTreeCommand() *cli.Command {
 		"Display a suffix tree", init)
 }
 
+// ShowMenu displays the menu of show commands
 func ShowMenu() *cli.Command {
 	return cli.NewMenu("show", "display data structures", `
 	Display data structures for various string algorithms.

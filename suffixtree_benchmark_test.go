@@ -1,16 +1,17 @@
-package gostr
+package gostr_test
 
 import (
 	"math/rand"
 	"testing"
 	"time"
 
+	"github.com/mailund/gostr"
 	"github.com/mailund/gostr/test"
 )
 
 func benchmarkConstruction(
 	b *testing.B,
-	constructor func(string) *SuffixTree,
+	constructor func(string) *gostr.SuffixTree,
 	n int) {
 	b.Helper()
 
@@ -23,31 +24,31 @@ func benchmarkConstruction(
 	}
 }
 
-func BenchmarkNaive10000(b *testing.B)   { benchmarkConstruction(b, NaiveST, 10000) }
-func BenchmarkNaive100000(b *testing.B)  { benchmarkConstruction(b, NaiveST, 100000) }
-func BenchmarkNaive1000000(b *testing.B) { benchmarkConstruction(b, NaiveST, 1000000) }
+func BenchmarkNaive10000(b *testing.B)   { benchmarkConstruction(b, gostr.NaiveST, 10000) }
+func BenchmarkNaive100000(b *testing.B)  { benchmarkConstruction(b, gostr.NaiveST, 100000) }
+func BenchmarkNaive1000000(b *testing.B) { benchmarkConstruction(b, gostr.NaiveST, 1000000) }
 
-func BenchmarkMcCreight10000(b *testing.B)   { benchmarkConstruction(b, McCreight, 10000) }
-func BenchmarkMcCreight100000(b *testing.B)  { benchmarkConstruction(b, McCreight, 100000) }
-func BenchmarkMcCreight1000000(b *testing.B) { benchmarkConstruction(b, McCreight, 1000000) }
+func BenchmarkMcCreight10000(b *testing.B)   { benchmarkConstruction(b, gostr.McCreight, 10000) }
+func BenchmarkMcCreight100000(b *testing.B)  { benchmarkConstruction(b, gostr.McCreight, 100000) }
+func BenchmarkMcCreight1000000(b *testing.B) { benchmarkConstruction(b, gostr.McCreight, 1000000) }
 
-func publicTraversal(n STNode) int {
+func publicTraversal(n gostr.STNode) int {
 	switch n.NodeType {
-	case Leaf:
+	case gostr.Leaf:
 		return n.Leaf().Index
 
-	case Inner:
+	case gostr.Inner:
 		val := 0
 
 		for _, child := range n.Inner().Children {
-			if child.NodeType != UnInitialised {
+			if child.NodeType != gostr.UnInitialised {
 				val += publicTraversal(child)
 			}
 		}
 
 		return val
 
-	case UnInitialised:
+	case gostr.UnInitialised:
 		// do nothing
 		return 0
 	}
@@ -55,7 +56,7 @@ func publicTraversal(n STNode) int {
 	return 0 // Unreachable, but we need to return...
 }
 
-func visitorTraversal(n STNode) int {
+func visitorTraversal(n gostr.STNode) int {
 	res := 0
 
 	n.LeafIndices(func(idx int) { res += idx })
@@ -67,7 +68,7 @@ func Test_Traversal(t *testing.T) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	x := test.RandomStringRange(500, 1000, "abcdefg", rng)
-	st := NaiveST(x)
+	st := gostr.NaiveST(x)
 
 	public := publicTraversal(st.Root)
 	visitor := 0
@@ -80,13 +81,13 @@ func Test_Traversal(t *testing.T) {
 	}
 }
 
-func benchmarkTraversal(b *testing.B, traversal func(STNode) int) {
+func benchmarkTraversal(b *testing.B, traversal func(gostr.STNode) int) {
 	b.Helper()
 
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
 	x := test.RandomStringN(1000, "abcdefg", rng)
-	st := NaiveST(x)
+	st := gostr.NaiveST(x)
 
 	traversal(st.Root) // first traversal sorts the children...
 

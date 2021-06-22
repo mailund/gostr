@@ -222,7 +222,8 @@ func skew(x []int32, asize int32) []int32 {
 	return merge(x, sa12, SA3)
 }
 
-// Skew builds the suffix array of a String using the skew algorithm.
+// SkewWithAlphabet builds the suffix array of a string, first mapping
+// it to a byte slice using the alphabet alpha.
 func SkewWithAlphabet(x string, alpha *Alphabet) ([]int32, error) {
 	xb, err := alpha.MapToIntsWithSentinel(x)
 	if err != nil {
@@ -232,6 +233,7 @@ func SkewWithAlphabet(x string, alpha *Alphabet) ([]int32, error) {
 	return skew(xb, int32(alpha.Size())), nil
 }
 
+// Skew builds the suffix array of a string using the skew algorithm.
 func Skew(x string) []int32 {
 	sa, _ := SkewWithAlphabet(x, NewAlphabet(x))
 	return sa
