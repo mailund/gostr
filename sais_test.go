@@ -23,9 +23,9 @@ func Test_newBitArray(t *testing.T) {
 					len(tt.bits), tt.bits, len(tt.bits), got.length)
 			}
 			for i, b := range tt.bits {
-				if got.get(i) != b {
+				if got.get(int32(i)) != b {
 					t.Errorf("newBitArray(%d,%v), want %v at index %d but got %v",
-						len(tt.bits), tt.bits, b, i, got.get(i))
+						len(tt.bits), tt.bits, b, i, got.get(int32(i)))
 				}
 			}
 		})
@@ -49,16 +49,16 @@ func Test_bitArray_set(t *testing.T) {}
 
 func Test_classifyST(t *testing.T) {
 	type args struct {
-		x []int
+		x []int32
 	}
 	tests := []struct {
 		name string
 		args args
 		want []bool
 	}{
-		{`String "$"`, args{[]int{0}}, []bool{true}},
-		{`String "a$"`, args{[]int{1, 0}}, []bool{false, true}},
-		{`String "ab$"`, args{[]int{1, 2, 0}}, []bool{true, false, true}},
+		{`String "$"`, args{[]int32{0}}, []bool{true}},
+		{`String "a$"`, args{[]int32{1, 0}}, []bool{false, true}},
+		{`String "ab$"`, args{[]int32{1, 2, 0}}, []bool{true, false, true}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -68,9 +68,9 @@ func Test_classifyST(t *testing.T) {
 				t.Errorf("classifyS() = %v has the wrong length (want %v)", isS, len(tt.want))
 			}
 			for i, b := range tt.want {
-				if isS.get(i) != b {
+				if isS.get(int32(i)) != b {
 					t.Errorf("classifyS() = %v, bit %d should be %v but is %v",
-						isS, i, b, isS.get(i))
+						isS, i, b, isS.get(int32(i)))
 				}
 			}
 		})
@@ -79,17 +79,17 @@ func Test_classifyST(t *testing.T) {
 
 func Test_countBuckets(t *testing.T) {
 	type args struct {
-		x     []int
+		x     []int32
 		asize int
 	}
 	tests := []struct {
 		name string
 		args args
-		want []int
+		want []int32
 	}{
-		{`Sentinel string`, args{[]int{0}, 1}, []int{1}},
-		{`"abc$"`, args{[]int{1, 2, 3, 0}, 4}, []int{1, 1, 1, 1}},
-		{`"aba$"`, args{[]int{1, 2, 1, 0}, 3}, []int{1, 2, 1}},
+		{`Sentinel string`, args{[]int32{0}, 1}, []int32{1}},
+		{`"abc$"`, args{[]int32{1, 2, 3, 0}, 4}, []int32{1, 1, 1, 1}},
+		{`"aba$"`, args{[]int32{1, 2, 1, 0}, 3}, []int32{1, 2, 1}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -102,18 +102,18 @@ func Test_countBuckets(t *testing.T) {
 
 func Test_bucketsFronts(t *testing.T) {
 	type args struct {
-		buckets []int
+		buckets []int32
 	}
 	tests := []struct {
 		name string
 		args args
-		want []int
+		want []int32
 	}{
-		{`Singleton`, args{[]int{1}}, []int{0}},
-		{`[1, 2, 3]`, args{[]int{1, 2, 3}}, []int{0, 1, 3}},
+		{`Singleton`, args{[]int32{1}}, []int32{0}},
+		{`[1, 2, 3]`, args{[]int32{1, 2, 3}}, []int32{0, 1, 3}},
 	}
 	for _, tt := range tests {
-		buf := make([]int, len(tt.args.buckets))
+		buf := make([]int32, len(tt.args.buckets))
 		t.Run(tt.name, func(t *testing.T) {
 			bucketsFronts(buf, tt.args.buckets)
 			if !reflect.DeepEqual(buf, tt.want) {
@@ -125,18 +125,18 @@ func Test_bucketsFronts(t *testing.T) {
 
 func Test_bucketsEnd(t *testing.T) {
 	type args struct {
-		buckets []int
+		buckets []int32
 	}
 	tests := []struct {
 		name string
 		args args
-		want []int
+		want []int32
 	}{
-		{`Singleton`, args{buckets: []int{1}}, []int{1}},
-		{`[1, 2, 3]`, args{buckets: []int{1, 2, 3}}, []int{1, 3, 6}},
+		{`Singleton`, args{buckets: []int32{1}}, []int32{1}},
+		{`[1, 2, 3]`, args{buckets: []int32{1, 2, 3}}, []int32{1, 3, 6}},
 	}
 	for _, tt := range tests {
-		buf := make([]int, len(tt.args.buckets))
+		buf := make([]int32, len(tt.args.buckets))
 		t.Run(tt.name, func(t *testing.T) {
 			bucketsEnd(buf, tt.args.buckets)
 			if !reflect.DeepEqual(buf, tt.want) {
@@ -149,7 +149,7 @@ func Test_bucketsEnd(t *testing.T) {
 func Test_isLMS(t *testing.T) {
 	type args struct {
 		isS *bitArray
-		i   int
+		i   int32
 	}
 	tests := []struct {
 		name string
@@ -169,8 +169,8 @@ func Test_isLMS(t *testing.T) {
 
 func Test_recSAIS(t *testing.T) {
 	type args struct {
-		x     []int
-		SA    []int
+		x     []int32
+		SA    []int32
 		asize int
 	}
 	tests := []struct {
@@ -189,9 +189,9 @@ func Test_recSAIS(t *testing.T) {
 
 func Test_equalLMS(t *testing.T) {
 	type args struct {
-		x []int
-		i int
-		j int
+		x []int32
+		i int32
+		j int32
 	}
 	tests := []struct {
 		name string
@@ -199,13 +199,13 @@ func Test_equalLMS(t *testing.T) {
 		want bool
 	}{
 		{"both end of string",
-			args{[]int{2, 1, 1, 0}, 4, 4},
+			args{[]int32{2, 1, 1, 0}, 4, 4},
 			true},
 		{"first end of string",
-			args{[]int{2, 1, 1, 0}, 4, 0},
+			args{[]int32{2, 1, 1, 0}, 4, 0},
 			false},
 		{"second end of string",
-			args{[]int{2, 1, 1, 0}, 0, 4},
+			args{[]int32{2, 1, 1, 0}, 0, 4},
 			false},
 	}
 	for _, tt := range tests {

@@ -8,7 +8,7 @@ import (
 	"github.com/mailund/gostr/test"
 )
 
-type SAAlgo = func(x string) []int
+type SAAlgo = func(x string) []int32
 
 var sa_algorithms = map[string]SAAlgo{
 	"Skew":       gostr.Skew,
@@ -21,14 +21,14 @@ func runBasicTest(algo SAAlgo) func(*testing.T) {
 		tests := []struct {
 			name   string
 			x      string
-			wantSA []int
+			wantSA []int32
 		}{
-			{`We handle empty strings`, "", []int{0}},
-			{`Unique characters "a"`, "a", []int{1, 0}},
-			{`Unique characters "ab"`, "ab", []int{2, 0, 1}},
-			{`Unique characters "ba"`, "ba", []int{2, 1, 0}},
-			{`Unique characters "abc"`, "abc", []int{3, 0, 1, 2}},
-			{`Unique characters "bca"`, "bca", []int{3, 2, 0, 1}},
+			{`We handle empty strings`, "", []int32{0}},
+			{`Unique characters "a"`, "a", []int32{1, 0}},
+			{`Unique characters "ab"`, "ab", []int32{2, 0, 1}},
+			{`Unique characters "ba"`, "ba", []int32{2, 1, 0}},
+			{`Unique characters "abc"`, "abc", []int32{3, 0, 1, 2}},
+			{`Unique characters "bca"`, "bca", []int32{3, 2, 0, 1}},
 		}
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {

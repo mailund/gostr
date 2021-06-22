@@ -6,15 +6,15 @@
 
 package gostr
 
-func safeIdx(x []int, i int) int {
-	if i >= len(x) {
+func safeIdx(x []int32, i int32) int32 {
+	if i >= int32(len(x)) {
 		return 0
 	} else {
 		return x[i]
 	}
 }
 
-func sa3len(n int) int {
+func sa3len(n int32) int32 {
 	if n == 0 {
 		return 0
 	} else {
@@ -22,21 +22,21 @@ func sa3len(n int) int {
 	}
 }
 
-func sa12len(n int) int {
+func sa12len(n int32) int32 {
 	return n - sa3len(n)
 }
 
-func symbcount(x []int, idx []int, offset int, asize int) []int {
-	counts := make([]int, asize)
+func symbcount(x []int32, idx []int32, offset int32, asize int32) []int32 {
+	counts := make([]int32, asize)
 	for _, i := range idx {
 		counts[safeIdx(x, i+offset)]++
 	}
 	return counts
 }
 
-func cumsum(counts []int) []int {
-	res := make([]int, len(counts))
-	acc := 0
+func cumsum(counts []int32) []int32 {
+	res := make([]int32, len(counts))
+	var acc int32
 	for i, k := range counts {
 		res[i] = acc
 		acc += k
@@ -44,10 +44,10 @@ func cumsum(counts []int) []int {
 	return res
 }
 
-func bucketSort(x []int, asize int, idx []int, offset int) []int {
+func bucketSort(x []int32, asize int32, idx []int32, offset int32) []int32 {
 	counts := symbcount(x, idx, offset, asize)
 	buckets := cumsum(counts)
-	out := make([]int, len(idx))
+	out := make([]int32, len(idx))
 	for _, i := range idx {
 		bucket := safeIdx(x, i+offset)
 		out[buckets[bucket]] = i
@@ -56,28 +56,28 @@ func bucketSort(x []int, asize int, idx []int, offset int) []int {
 	return out
 }
 
-func radix3(x []int, asize int, idx []int) []int {
+func radix3(x []int32, asize int32, idx []int32) []int32 {
 	idx = bucketSort(x, asize, idx, 2)
 	idx = bucketSort(x, asize, idx, 1)
 	return bucketSort(x, asize, idx, 0)
 }
 
-func getSA12(x []int) []int {
-	SA12 := make([]int, sa12len(len(x)))
+func getSA12(x []int32) []int32 {
+	SA12 := make([]int32, sa12len(int32(len(x))))
 	for i, j := 0, 0; i < len(x); i++ {
 		if i%3 != 0 {
-			SA12[j] = i
+			SA12[j] = int32(i)
 			j++
 		}
 	}
 	return SA12
 }
 
-func getSA3(x, SA12 []int) []int {
-	SA3 := make([]int, sa3len(len(x)))
+func getSA3(x, SA12 []int32) []int32 {
+	SA3 := make([]int32, sa3len(int32(len(x))))
 	k := 0
 	if len(x)%3 == 1 {
-		SA3[k] = len(x) - 1
+		SA3[k] = int32(len(x) - 1)
 		k++
 	}
 	for _, i := range SA12 {
@@ -89,25 +89,25 @@ func getSA3(x, SA12 []int) []int {
 	return SA3
 }
 
-type triplet = [3]int
-type tripletMap = map[triplet]int
+type triplet = [3]int32
+type tripletMap = map[triplet]int32
 
-func trip(x []int, i int) triplet {
+func trip(x []int32, i int32) triplet {
 	return triplet{safeIdx(x, i), safeIdx(x, i+1), safeIdx(x, i+2)}
 }
 
-func collectAlphabet(x []int, idx []int) tripletMap {
+func collectAlphabet(x, idx []int32) tripletMap {
 	alpha := tripletMap{}
 	for _, i := range idx {
 		t := trip(x, i)
 		if _, ok := alpha[t]; !ok {
-			alpha[t] = len(alpha) + 1 // + 1 for sentinel
+			alpha[t] = int32(len(alpha) + 1) // + 1 for sentinel
 		}
 	}
 	return alpha
 }
 
-func less(x []int, i int, j int, ISA map[int]int) bool {
+func less(x []int32, i, j int32, ISA map[int32]int32) bool {
 	a, b := safeIdx(x, i), safeIdx(x, j)
 	if a < b {
 		return true
@@ -121,13 +121,13 @@ func less(x []int, i int, j int, ISA map[int]int) bool {
 	return less(x, i+1, j+1, ISA)
 }
 
-func merge(x []int, SA12 []int, SA3 []int) []int {
-	ISA := map[int]int{}
+func merge(x, SA12, SA3 []int32) []int32 {
+	ISA := map[int32]int32{}
 	for i := 0; i < len(SA12); i++ {
-		ISA[SA12[i]] = i
+		ISA[SA12[i]] = int32(i)
 	}
 
-	SA := make([]int, len(SA12)+len(SA3))
+	SA := make([]int32, len(SA12)+len(SA3))
 	i, j, k := 0, 0, 0
 	for i < len(SA12) && j < len(SA3) {
 		if less(x, SA12[i], SA3[j], ISA) {
@@ -151,21 +151,24 @@ func merge(x []int, SA12 []int, SA3 []int) []int {
 	return SA
 }
 
-func buildU(x []int, alpha tripletMap) []int {
-	u := make([]int, sa12len(len(x)))
-	k := 0
-	for i := 1; i < len(x); i += 3 {
+func buildU(x []int32, alpha tripletMap) []int32 {
+	u := make([]int32, sa12len(int32(len(x))))
+	var (
+		k int32
+		i int32
+	)
+	for i = 1; i < int32(len(x)); i += 3 {
 		u[k] = alpha[trip(x, i)]
 		k++
 	}
-	for i := 2; i < len(x); i += 3 {
+	for i = 2; i < int32(len(x)); i += 3 {
 		u[k] = alpha[trip(x, i)]
 		k++
 	}
 	return u
 }
 
-func uidx(i int, m int) int {
+func uidx(i, m int32) int32 {
 	if i < m {
 		return 1 + 3*i
 	} else {
@@ -173,15 +176,15 @@ func uidx(i int, m int) int {
 	}
 }
 
-func skew(x []int, asize int) []int {
+func skew(x []int32, asize int32) []int32 {
 	SA12 := radix3(x, asize, getSA12(x))
 	alpha := collectAlphabet(x, SA12)
 	if len(alpha) < len(SA12) {
 		// Build u and its SA.
 		u := buildU(x, alpha)
-		usa := skew(u, len(alpha)+1) // +1 for sentinel
+		usa := skew(u, int32(len(alpha)+1)) // +1 for sentinel
 		// Then map back to SA12 indices
-		m := (len(u) + 1) / 2
+		var m int32 = int32((len(u) + 1) / 2)
 		for k, i := range usa {
 			SA12[k] = uidx(i, m)
 		}
@@ -191,15 +194,15 @@ func skew(x []int, asize int) []int {
 }
 
 // Skew builds the suffix array of a String using the skew algorithm.
-func SkewWithAlphabet(x string, alpha *Alphabet) ([]int, error) {
+func SkewWithAlphabet(x string, alpha *Alphabet) ([]int32, error) {
 	x_, err := alpha.MapToIntsWithSentinel(x)
 	if err != nil {
-		return []int{}, err
+		return []int32{}, err
 	}
-	return skew(x_, alpha.Size()), nil
+	return skew(x_, int32(alpha.Size())), nil
 }
 
-func Skew(x string) []int {
+func Skew(x string) []int32 {
 	sa, _ := SkewWithAlphabet(x, NewAlphabet(x))
 	return sa
 }

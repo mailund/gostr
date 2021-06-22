@@ -8,7 +8,7 @@ import (
 
 func checkAlphabet(
 	t *testing.T, x string,
-	letters []byte, expected_mapped []byte) {
+	letters []byte, expectedMapped []byte) {
 
 	alpha := NewAlphabet(x)
 	if alpha.Size() != len(letters)+1 { // +1 for sentinel
@@ -40,8 +40,8 @@ func checkAlphabet(
 	if err != nil {
 		t.Fatalf("Error mapping string %s", x)
 	}
-	if !reflect.DeepEqual(y, expected_mapped) {
-		t.Fatalf("We expected the mapped string to be %v but it is %v", expected_mapped, y)
+	if !reflect.DeepEqual(y, expectedMapped) {
+		t.Fatalf("We expected the mapped string to be %v but it is %v", expectedMapped, y)
 	}
 
 	xx := strings.ReplaceAll(x, string(Sentinel), string(SentinelSymbol))
@@ -57,16 +57,16 @@ func checkAlphabet(
 		t.Fatalf(`The last character in "%s" should be sentinel`, zz)
 	}
 
-	expected_ints := make([]int, len(expected_mapped))
-	for i, b := range expected_mapped {
-		expected_ints[i] = int(b)
+	expectedInts := make([]int32, len(expectedMapped))
+	for i, b := range expectedMapped {
+		expectedInts[i] = int32(b)
 	}
 	yy, err2 := alpha.MapToIntsWithSentinel(x)
 	if err2 != nil {
 		t.Fatalf("Error mapping string %s", x)
 	}
-	if !reflect.DeepEqual(yy, expected_ints) {
-		t.Fatalf("We expected the mapped string to be %v but it is %v", expected_mapped, y)
+	if !reflect.DeepEqual(yy, expectedInts) {
+		t.Fatalf("We expected the mapped string to be %v but it is %v", expectedMapped, y)
 	}
 }
 

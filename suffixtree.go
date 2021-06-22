@@ -367,16 +367,16 @@ func McCreight(x_ string) *SuffixTree {
 
 // ComputeSuffixAndLcpArray constructs a suffix array and longest common prefix
 // array from a suffix tree.
-func (st *SuffixTree) ComputeSuffixAndLcpArray() (sa []int, lcp []int) {
-	sa = make([]int, len(st.String))
-	lcp = make([]int, len(st.String))
+func (st *SuffixTree) ComputeSuffixAndLcpArray() (sa []int32, lcp []int32) {
+	sa = make([]int32, len(st.String))
+	lcp = make([]int32, len(st.String))
 	i := 0
 
-	var traverse func(n STNode, left, depth int)
-	traverse = func(n STNode, left, depth int) {
+	var traverse func(n STNode, left, depth int32)
+	traverse = func(n STNode, left, depth int32) {
 		switch n.NodeType {
 		case Leaf:
-			sa[i] = n.Leaf().Index
+			sa[i] = int32(n.Leaf().Index)
 			lcp[i] = left
 			i++
 
@@ -385,7 +385,7 @@ func (st *SuffixTree) ComputeSuffixAndLcpArray() (sa []int, lcp []int) {
 				if child.IsNil() {
 					continue
 				}
-				traverse(child, left, depth+len(child.Shared().EdgeLabel))
+				traverse(child, left, depth+int32(len(child.Shared().EdgeLabel)))
 				left = depth // The remaining children should use depth
 			}
 		}
@@ -396,7 +396,7 @@ func (st *SuffixTree) ComputeSuffixAndLcpArray() (sa []int, lcp []int) {
 }
 
 // StSaConstruction constructs a suffix array from a suffix tree.
-func StSaConstruction(x string) []int {
+func StSaConstruction(x string) []int32 {
 	sa, _ := McCreight(x).ComputeSuffixAndLcpArray()
 	return sa
 }

@@ -69,7 +69,7 @@ func Test_MississippiBWT(t *testing.T) {
 
 	L, R := BwtSearch(x, p, ctab, otab)
 	for i := L; i < R; i++ {
-		test.CheckOccurrenceAt(t, x_, p_, sa[i])
+		test.CheckOccurrenceAt(t, x_, p_, int(sa[i]))
 	}
 
 	preproc := BwtPreprocess(x_)

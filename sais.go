@@ -8,16 +8,16 @@ type bitArray struct {
 func newBitArray(size int, bits ...bool) *bitArray {
 	ba := bitArray{length: size, bytes: make([]byte, (size+8-1)/8)}
 	for i, b := range bits {
-		ba.set(i, b)
+		ba.set(int32(i), b)
 	}
 	return &ba
 }
 
-func (a *bitArray) get(i int) bool {
+func (a *bitArray) get(i int32) bool {
 	return (a.bytes[i/8] & (1 << (i % 8))) != 0
 }
 
-func (a *bitArray) set(i int, b bool) {
+func (a *bitArray) set(i int32, b bool) {
 	if b {
 		a.bytes[i/8] = a.bytes[i/8] | (1 << (i % 8))
 	} else {
@@ -25,35 +25,36 @@ func (a *bitArray) set(i int, b bool) {
 	}
 }
 
-func classifyS(isS *bitArray, x []int) {
+func classifyS(isS *bitArray, x []int32) {
 	// Last element always exists, it is the sentinel and is S
-	isS.set(len(x)-1, true)
+	isS.set(int32(len(x)-1), true)
 
 	// Otherwise, an index is S if the first letter is smaller
 	// or the first letters are the same and the next is S.
-	for i := len(x) - 2; i >= 0; i-- {
+	var i int32
+	for i = int32(len(x) - 2); i >= 0; i-- {
 		isS.set(i, x[i] < x[i+1] || (x[i] == x[i+1] && isS.get(i+1)))
 	}
 }
 
-func isLMS(isS *bitArray, i int) bool {
+func isLMS(isS *bitArray, i int32) bool {
 	return (i != 0) && isS.get(i) && !isS.get(i-1)
 }
 
-func equalLMS(x []int, isS *bitArray, i, j int) bool {
+func equalLMS(x []int32, isS *bitArray, i, j int32) bool {
 	if i == j {
 		// The same index is obviously the same...
 		return true
 	}
 	// they can't be equal now, so only one is the
 	// sentinel LMS, thus they cannot be equal
-	if i == len(x) || j == len(x) {
+	if i == int32(len(x)) || j == int32(len(x)) {
 		return false
 	}
 
 	// From here on, we assume that neither index points past the end.
-
-	for k := 0; ; k++ {
+	var k int32
+	for k = 0; ; k++ {
 		iLMS := isLMS(isS, i+k)
 		jLMS := isLMS(isS, j+k)
 		if k > 0 && iLMS && jLMS {
@@ -65,36 +66,36 @@ func equalLMS(x []int, isS *bitArray, i, j int) bool {
 	}
 }
 
-func countBuckets(x []int, asize int) []int {
-	buckets := make([]int, asize)
+func countBuckets(x []int32, asize int) []int32 {
+	buckets := make([]int32, asize)
 	for _, a := range x {
 		buckets[a]++
 	}
 	return buckets
 }
 
-func bucketsFronts(fronts, buckets []int) {
-	sum := 0
+func bucketsFronts(fronts, buckets []int32) {
+	var sum int32
 	for i := range buckets {
 		fronts[i] = sum
 		sum += buckets[i]
 	}
 }
 
-func bucketsEnd(ends, buckets []int) {
-	sum := 0
+func bucketsEnd(ends, buckets []int32) {
+	var sum int32
 	for i := range buckets {
 		sum += buckets[i]
 		ends[i] = sum
 	}
 }
 
-func insertBucketFront(out []int, fronts []int, bucket, val int) {
+func insertBucketFront(out []int32, fronts []int32, bucket, val int32) {
 	out[fronts[bucket]] = val
 	fronts[bucket]++
 }
 
-func insertBucketEnd(out []int, ends []int, bucket, val int) {
+func insertBucketEnd(out []int32, ends []int32, bucket, val int32) {
 	ends[bucket]--
 	out[ends[bucket]] = val
 }
@@ -103,25 +104,26 @@ const (
 	undefined = -1
 )
 
-func clearToUndefined(SA []int) {
+func clearToUndefined(SA []int32) {
 	for i := range SA {
 		SA[i] = undefined
 	}
 }
 
 func bucketLMS(
-	x, SA []int,
-	buckets, bucketEnds []int,
+	x, SA []int32,
+	buckets, bucketEnds []int32,
 	isS *bitArray) {
 	bucketsEnd(bucketEnds, buckets)
-	for i := len(x) - 1; i >= 0; i-- {
+	var i int32
+	for i = int32(len(x) - 1); i >= 0; i-- {
 		if isLMS(isS, i) {
 			insertBucketEnd(SA, bucketEnds, x[i], i)
 		}
 	}
 }
 
-func induceLS(x, SA, buckets, bucketEnds []int, isS *bitArray) {
+func induceLS(x, SA, buckets, bucketEnds []int32, isS *bitArray) {
 	// Induce L sorting
 	bucketsFronts(bucketEnds, buckets)
 	for i := 0; i < len(x); i++ {
@@ -147,7 +149,7 @@ func induceLS(x, SA, buckets, bucketEnds []int, isS *bitArray) {
 	}
 }
 
-func compactLMS(SA []int, isS *bitArray) ([]int, []int) {
+func compactLMS(SA []int32, isS *bitArray) ([]int32, []int32) {
 	k := 0
 	for _, j := range SA {
 		if isLMS(isS, j) {
@@ -159,7 +161,7 @@ func compactLMS(SA []int, isS *bitArray) ([]int, []int) {
 	return SA[:k], SA[k:]
 }
 
-func compactDefined(x []int) []int {
+func compactDefined(x []int32) []int32 {
 	k := 0
 	for _, i := range x {
 		if i != undefined {
@@ -171,7 +173,7 @@ func compactDefined(x []int) []int {
 	return x[:k]
 }
 
-func reduceLMSString(x, SA []int, isS *bitArray) ([]int, []int, int) {
+func reduceLMSString(x, SA []int32, isS *bitArray) ([]int32, []int32, int) {
 	// We split the input SA into two bits, one that is large
 	// enough to hold the LMS indices and one that can hold the
 	// indices if we divide them by two. The LMS strings are in the
@@ -181,7 +183,7 @@ func reduceLMSString(x, SA []int, isS *bitArray) ([]int, []int, int) {
 
 	clearToUndefined(buffer)
 	prevLMS := compact[0]
-	letter := 0 // the first LMS is the sentinel
+	var letter int32
 	buffer[prevLMS/2] = 0
 	for i := 1; i < len(compact); i++ {
 		j := compact[i]
@@ -197,13 +199,13 @@ func reduceLMSString(x, SA []int, isS *bitArray) ([]int, []int, int) {
 	// reduced string, so that is what we return for it.
 	// The new alphabet size is the largest letter we have assigned
 	// plus one (size == largest value + 1)
-	return reduced, compact, letter + 1
+	return reduced, compact, int(letter + 1)
 }
 
 func reverseLMSMap(
-	x, SA []int,
-	reducedSA, offsets []int,
-	buckets, bucketEnds []int,
+	x, SA []int32,
+	reducedSA, offsets []int32,
+	buckets, bucketEnds []int32,
 	isS *bitArray) {
 
 	// Remap the reduced suffixes to the indices in the longer
@@ -212,10 +214,10 @@ func reverseLMSMap(
 	// This figures out the original indices for the LMS strings.
 	// They originally came in the same order, so index by index
 	// they match, we just have to skip over the non-LMS indices
-	k := 0
-	for i := 1; i < len(x); i++ {
+	var k, i int32
+	for i = 1; i < int32(len(x)); i++ {
 		if isLMS(isS, i) {
-			offsets[k] = i
+			offsets[k] = int32(i)
 			k++
 		}
 	}
@@ -232,18 +234,18 @@ func reverseLMSMap(
 	// move later.
 	clearToUndefined(SA[len(reducedSA):])
 	bucketsEnd(bucketEnds, buckets)
-	var j int
+	var j int32
 	for i := len(reducedSA) - 1; i >= 0; i-- {
 		j, reducedSA[i] = reducedSA[i], undefined
 		insertBucketEnd(SA, bucketEnds, x[j], j)
 	}
 }
 
-func recSais(x, SA []int, asize int, isS *bitArray) {
+func recSais(x, SA []int32, asize int, isS *bitArray) {
 	// Base case of recursion: unique characters
 	if len(x) == asize {
 		for i, a := range x {
-			SA[a] = i
+			SA[a] = int32(i)
 		}
 		return
 	}
@@ -251,7 +253,7 @@ func recSais(x, SA []int, asize int, isS *bitArray) {
 	// Recursive case...
 	classifyS(isS, x)
 	buckets := countBuckets(x, asize)
-	bucketEnds := make([]int, len(buckets))
+	bucketEnds := make([]int32, len(buckets))
 
 	// Induce first sorting
 	clearToUndefined(SA)
@@ -270,7 +272,7 @@ func recSais(x, SA []int, asize int, isS *bitArray) {
 	if redSize != len(redX) {
 		// Restore the tables we need again now
 		buckets = countBuckets(x, asize)
-		bucketEnds = make([]int, len(buckets))
+		bucketEnds = make([]int32, len(buckets))
 	}
 
 	// Second impute
@@ -278,18 +280,18 @@ func recSais(x, SA []int, asize int, isS *bitArray) {
 	induceLS(x, SA, buckets, bucketEnds, isS)
 }
 
-func SaisWithAlphabet(x_ string, alpha *Alphabet) ([]int, error) {
+func SaisWithAlphabet(x_ string, alpha *Alphabet) ([]int32, error) {
 	x, err := alpha.MapToIntsWithSentinel(x_)
 	if err != nil {
-		return []int{}, err
+		return []int32{}, err
 	}
-	SA := make([]int, len(x))
+	SA := make([]int32, len(x))
 	isS := newBitArray(len(x))
 	recSais(x, SA, alpha.Size(), isS)
 	return SA, nil
 }
 
-func Sais(x string) (SA []int) {
+func Sais(x string) (SA []int32) {
 	sa, _ := SaisWithAlphabet(x, NewAlphabet(x))
 	return sa
 }

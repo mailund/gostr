@@ -34,10 +34,13 @@ func NewAlphabet(ref string) *Alphabet {
 	return &alpha
 }
 
+// Size gives the number of letters in the alphabet. It will always be at least
+// one, since all alphabets contain the sentinel character (zero).
 func (alpha *Alphabet) Size() int {
 	return alpha.size
 }
 
+// Contains checks if a is contained in the alphabet
 func (alpha *Alphabet) Contains(a byte) bool {
 	return a == Sentinel || alpha._map[a] != 0
 }
@@ -55,13 +58,13 @@ func (alpha *Alphabet) mapBytes(x string, out []byte) ([]byte, error) {
 	return out, nil
 }
 
-func (alpha *Alphabet) mapInts(x string, out []int) ([]int, error) {
+func (alpha *Alphabet) mapInts(x string, out []int32) ([]int32, error) {
 	for i := 0; i < len(x); i++ {
 		b := alpha._map[x[i]]
 		if b == 0 && x[i] != 0 {
-			return []int{}, fmt.Errorf("character %q is not in the alphabet", x[i])
+			return []int32{}, fmt.Errorf("character %q is not in the alphabet", x[i])
 		}
-		out[i] = int(b)
+		out[i] = int32(b)
 	}
 	return out, nil
 }
@@ -82,8 +85,8 @@ func (alpha *Alphabet) MapToBytesWithSentinel(x string) ([]byte, error) {
 // to the alphabet. It only differs from MapToBytes in the type of the output, but is
 // used in algorithms where we need to operate on integers rather than the smaller
 // bytes.
-func (alpha *Alphabet) MapToInts(x string) ([]int, error) {
-	return alpha.mapInts(x, make([]int, len(x)))
+func (alpha *Alphabet) MapToInts(x string) ([]int32, error) {
+	return alpha.mapInts(x, make([]int32, len(x)))
 }
 
 // MapToIntsWithSentinel translates a string into an integer slice, mapping characters according
@@ -91,8 +94,8 @@ func (alpha *Alphabet) MapToInts(x string) ([]int, error) {
 // It only differs from MapToBytes in the type of the output, but is
 // used in algorithms where we need to operate on integers rather than the smaller
 // bytes.
-func (alpha *Alphabet) MapToIntsWithSentinel(x string) ([]int, error) {
-	return alpha.mapInts(x, make([]int, len(x)+1))
+func (alpha *Alphabet) MapToIntsWithSentinel(x string) ([]int32, error) {
+	return alpha.mapInts(x, make([]int32, len(x)+1))
 }
 
 func (alpha *Alphabet) revmapBytes(x []byte, strip_sentinel bool) string {

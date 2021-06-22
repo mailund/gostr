@@ -7,7 +7,7 @@ import (
 )
 
 func benchmarkSAconstruction(
-	constr func(string) []int,
+	constr func(string) []int32,
 	n int,
 	b *testing.B) {
 	rng := test.NewRandomSeed(b)

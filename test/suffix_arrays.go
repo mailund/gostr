@@ -10,14 +10,16 @@ import (
 	indices in x (plus one for the sentinel if len(sa) == len(x) + 1).
 	Reports an error to t otherwise
 */
-func CheckSAIndices(t *testing.T, x string, sa []int) bool {
+func CheckSAIndices(t *testing.T, x string, sa []int32) bool {
 	if len(sa) != len(x) && len(sa) != len(x)+1 {
 		t.Errorf("Suffix %v has an invalid length: %d. "+
 			"It should be %d without sentinel or %d with.",
 			sa, len(sa), len(x), len(x)+1)
 	}
 	indices := make([]int, len(sa))
-	copy(indices, sa)
+	for i, j := range sa {
+		indices[i] = int(j)
+	}
 	sort.Ints(indices)
 	for i, j := range indices {
 		if j < 0 || j > len(x) {
@@ -38,7 +40,7 @@ func CheckSAIndices(t *testing.T, x string, sa []int) bool {
 	represents the sorted suffix in the string x. Reports
 	errors to t.
 */
-func CheckSASorted(t *testing.T, x string, sa []int) bool {
+func CheckSASorted(t *testing.T, x string, sa []int32) bool {
 	result := true
 	for i := 1; i < len(sa); i++ {
 		if x[sa[i-1]:] >= x[sa[i]:] {
@@ -54,7 +56,7 @@ func CheckSASorted(t *testing.T, x string, sa []int) bool {
 	CheckSuffixArray runs all the consistency checks for
 	suffix array sa over string x, reporting errors to t.
 */
-func CheckSuffixArray(t *testing.T, x string, sa []int) bool {
+func CheckSuffixArray(t *testing.T, x string, sa []int32) bool {
 	result := true
 	result = result && CheckSAIndices(t, x, sa)
 	result = result && CheckSASorted(t, x, sa)

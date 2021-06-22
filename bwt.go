@@ -3,7 +3,7 @@ package gostr
 // Bwt gives you the Burrows-Wheeler transform of a string,
 // computed using the suffix array for the string. The
 // string should have a sentinel
-func Bwt(x []byte, sa []int) []byte {
+func Bwt(x []byte, sa []int32) []byte {
 	bwt := make([]byte, len(x))
 	for i := 0; i < len(sa); i++ {
 		j := sa[i]
@@ -172,7 +172,7 @@ func BwtPreprocess(x_ string) func(p string, cb func(i int)) {
 		}
 		L, R := BwtSearch(x, p, ctab, otab)
 		for i := L; i < R; i++ {
-			cb(sa[i])
+			cb(int(sa[i]))
 		}
 	}
 }
