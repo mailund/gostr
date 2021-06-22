@@ -5,11 +5,9 @@ import (
 	"testing"
 )
 
-/*
-	CheckSAIndices checks that the suffix array sa has all the
-	indices in x (plus one for the sentinel if len(sa) == len(x) + 1).
-	Reports an error to t otherwise
-*/
+// CheckSAIndices checks that the suffix array sa has all the
+// indices in x (plus one for the sentinel if len(sa) == len(x) + 1).
+// Reports an error to t otherwise
 func CheckSAIndices(t *testing.T, x string, sa []int32) bool {
 	t.Helper()
 
