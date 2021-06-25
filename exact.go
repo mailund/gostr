@@ -121,7 +121,9 @@ func Bmh(x, p string, callback func(int)) {
 		return
 	}
 
-	jump := make([]int, byteSize)
+	const noBytes = 256
+
+	jump := make([]int, noBytes)
 	for b := 0; b < len(jump); b++ {
 		jump[b] = len(p)
 	}

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/mailund/cli"
@@ -9,13 +8,10 @@ import (
 
 func main() {
 	var main = cli.NewMenu(
-		"gostr", "run gostr commands", "",
-		ShowMenu())
+		"gostr",
+		"shows string algorithms",
+		"Examples of various string algorithms and data structures.",
+		show)
 
-	if len(os.Args) < 1 {
-		fmt.Println("no args")
-		main.Usage()
-	} else {
-		main.Run(os.Args[1:])
-	}
+	main.Run(os.Args[1:])
 }

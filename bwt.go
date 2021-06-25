@@ -117,10 +117,10 @@ func NewOTab(bwt []byte, asize int) *OTab {
 	return &otab
 }
 
-const byteSize = 256
-
 func countLetters(x []byte) int {
-	observed := make([]int, byteSize)
+	const noBytes = 256
+
+	observed := make([]int, noBytes)
 	for _, a := range x {
 		observed[a] = 1
 	}
