@@ -11,7 +11,7 @@ func main() {
 		"gostr",
 		"shows string algorithms",
 		"Examples of various string algorithms and data structures.",
-		show)
+		exact, show)
 
 	main.Run(os.Args[1:])
 }
