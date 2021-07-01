@@ -36,7 +36,10 @@ func (c *Choice) String() string {
 // FIXME: I *must* ensure that there is a default value for an output file,
 // because nil writers will crash the program. Need a protocol in cli for that.
 // But that is a problem for a later day.
-type OutFile struct{ io.Writer }
+type OutFile struct {
+	io.Writer
+	fname string
+}
 
 func (o *OutFile) Set(x string) error {
 	f, err := os.Create(x)
@@ -56,10 +59,7 @@ func (o *OutFile) String() string {
 	case os.Stderr:
 		return "stderr"
 	default:
-		// Used when flag wants the zero value, but we don't want
-		// anything but non-zero defaults, and this will make it
-		// print one of the two above
-		return "wtf?"
+		return o.fname
 	}
 }
 
@@ -84,7 +84,7 @@ func InitArgs() interface{} {
 	}
 
 	return &ExactArgs{
-		Out:  OutFile{os.Stdout},
+		Out:  OutFile{Writer: os.Stdout},
 		Algo: Choice{Choice: "border", Options: exactAlgKeys},
 	}
 }
@@ -130,7 +130,7 @@ func ExactMapping(i interface{}) {
 		for rname, seq := range recs {
 			algo(seq, rec.Read, func(pos int) {
 				cigar := fmt.Sprintf("%dM", len(rec.Read))
-				if err := biof.PrintSam(args.Out.Writer, rec.Name, rname, pos, cigar, rec.Read, rec.Qual); err != nil {
+				if err := biof.PrintSam(args.Out, rec.Name, rname, pos, cigar, rec.Read, rec.Qual); err != nil {
 					fmt.Fprintf(os.Stderr, "Error writing to SAM file: %s\n", err)
 				}
 			})
