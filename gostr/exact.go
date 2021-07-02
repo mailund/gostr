@@ -2,66 +2,12 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"os"
-	"strings"
 
 	"github.com/mailund/biof"
 	"github.com/mailund/cli"
-	"github.com/mailund/cli/interfaces"
 	"github.com/mailund/gostr"
 )
-
-// This can go in cli one day...
-type Choice struct {
-	Choice  string
-	Options []string
-}
-
-func (c *Choice) Set(x string) error {
-	for _, v := range c.Options {
-		if v == x {
-			c.Choice = v
-			return nil
-		}
-	}
-
-	return interfaces.ParseErrorf("%s is not a valid choice", x)
-}
-
-func (c *Choice) String() string {
-	return c.Choice + ", choices: {" + strings.Join(c.Options, ",") + "}"
-}
-
-// FIXME: I *must* ensure that there is a default value for an output file,
-// because nil writers will crash the program. Need a protocol in cli for that.
-// But that is a problem for a later day.
-type OutFile struct {
-	io.Writer
-	fname string
-}
-
-func (o *OutFile) Set(x string) error {
-	f, err := os.Create(x)
-	if err != nil {
-		return interfaces.ParseErrorf("couldn't open file %s: %s", x, err)
-	}
-
-	o.Writer = f
-
-	return nil
-}
-
-func (o *OutFile) String() string {
-	switch o.Writer {
-	case os.Stdout:
-		return "stdout"
-	case os.Stderr:
-		return "stderr"
-	default:
-		return o.fname
-	}
-}
 
 var exactAlgos = map[string]func(x, p string, fn func(int)){
 	"naive":  gostr.Naive,
@@ -71,10 +17,10 @@ var exactAlgos = map[string]func(x, p string, fn func(int)){
 }
 
 type ExactArgs struct {
-	Algo   Choice  `flag:"algo" descr:"choice of algorithm to use"`
-	Out    OutFile `flag:"o" descr:"output file"`
-	Genome string  `pos:"genome" descr:"FASTA file containing the genome"`
-	Reads  string  `pos:"reads" descr:"FASTQ file containing the reads"`
+	Algo   cli.Choice  `flag:"algo" short:"a" descr:"choice of algorithm to use"`
+	Out    cli.OutFile `flag:"out" short:"o" descr:"output file"`
+	Genome cli.InFile  `pos:"genome" descr:"FASTA file containing the genome"`
+	Reads  cli.InFile  `pos:"reads" descr:"FASTQ file containing the reads"`
 }
 
 func InitArgs() interface{} {
@@ -84,19 +30,13 @@ func InitArgs() interface{} {
 	}
 
 	return &ExactArgs{
-		Out:  OutFile{Writer: os.Stdout},
-		Algo: Choice{Choice: "border", Options: exactAlgKeys},
+		Out:  cli.OutFile{Writer: os.Stdout},
+		Algo: cli.Choice{Choice: "border", Options: exactAlgKeys},
 	}
 }
 
-func GetFastaRecords(fname string) map[string]string {
-	f, err := os.Open(fname)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't open fasta file: %s\n", err.Error())
-		os.Exit(1)
-	} else {
-		defer f.Close()
-	}
+func GetFastaRecords(f cli.InFile) map[string]string {
+	defer f.Close()
 
 	recs, err := biof.ReadFasta(f)
 	if err != nil {
@@ -106,13 +46,8 @@ func GetFastaRecords(fname string) map[string]string {
 	return recs
 }
 
-func MapFastq(fname string, fn func(*biof.FastqRecord)) error {
-	f, err := os.Open(fname)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Couldn't open fastq file: %s\n", err)
-	} else {
-		defer f.Close()
-	}
+func MapFastq(f cli.InFile, fn func(*biof.FastqRecord)) error {
+	defer f.Close()
 
 	return biof.ScanFastq(f, fn)
 }

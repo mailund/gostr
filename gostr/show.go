@@ -8,16 +8,20 @@ import (
 )
 
 type argShowST struct {
-	X string `pos:"x" descr:"the string to build the suffix tree from"`
+	Out cli.OutFile `flag:"out" short:"o" descr:"file to write the dot description to"`
+	X   string      `pos:"x" descr:"the string to build the suffix tree from"`
 }
 
 var showST = cli.NewCommand(cli.CommandSpec{
 	Name:  "st",
 	Short: "shows the structure of a suffix tree for string x",
 	Long:  "Shows the structure of a suffix tree for string x.",
-	Init:  func() interface{} { return new(argShowST) },
-	Action: func(args interface{}) {
-		gostr.McCreight(args.(*argShowST).X).ToDot(os.Stdout)
+	Init: func() interface{} {
+		return &argShowST{Out: cli.OutFile{Writer: os.Stdout}}
+	},
+	Action: func(i interface{}) {
+		args, _ := i.(*argShowST)
+		gostr.McCreight(args.X).ToDot(args.Out)
 	},
 })
 
