@@ -12,6 +12,10 @@ func IntArraysEqual(a, b []int) bool {
 
 // IsPrefix tests if string x is a prefix of y
 func IsPrefix(x, y string) bool {
+	if len(y) < len(x) {
+		return false
+	}
+
 	for i := range x {
 		if x[i] != y[i] {
 			return false
