@@ -1,6 +1,7 @@
 package gostr_test
 
 import (
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -181,13 +182,17 @@ func runRandomApproxOccurencesTests(algo approxAlgo) func(*testing.T) {
 		t.Helper()
 
 		rng := test.NewRandomSeed(t)
-		test.GenerateTestStringsAndPatterns(10, 50, rng,
+		test.GenerateTestStringsAndPatterns(10, 20, rng,
 			func(x, p string) {
 				search := algo(x)
 				for edits := 1; edits < 3; edits++ {
 					search(p, edits, func(pos int, cigar string) {
 						count := gostr.CountEdits(x, p, pos, cigar)
 						if count > edits {
+							fmt.Println(pos, cigar)
+							ax, ap := gostr.ExtractAlignment(x, p, pos, cigar)
+							fmt.Printf("%s\n%s\n\n", ax, ap)
+
 							t.Errorf("Match at pos %d needs too many edits, %d vs %d",
 								pos, count, edits)
 						}

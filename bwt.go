@@ -279,6 +279,20 @@ func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, 
 	}
 }
 
+// we need to reverse to ops to make a cigar when we perform
+// the search in reverse
+func revOps(ops *EditOps) EditOps {
+	rev := make(EditOps, len(*ops))
+
+	copy(rev, *ops)
+
+	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
+		rev[i], rev[j] = rev[j], rev[i]
+	}
+
+	return rev
+}
+
 func recApproxFMIndex(tbls *fmIndexTables,
 	p []byte,
 	i, left, right, edits int,
@@ -287,8 +301,7 @@ func recApproxFMIndex(tbls *fmIndexTables,
 	fn func(int, string)) {
 	if i < 0 {
 		if edits >= 0 {
-			// FIXME: BUILD CIGAR
-			cigar := "foo"
+			cigar := OpsToCigar(revOps(ops))
 			for j := left; j < right; j++ {
 				fn(int(tbls.sa[j]), cigar)
 			}

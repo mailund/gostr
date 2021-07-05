@@ -11,7 +11,7 @@ import (
 type ApproxEdit int
 
 // EditOps is a type for a sequence of edit operations
-type EditOps []ApproxEdit
+type EditOps = []ApproxEdit
 
 const (
 	M ApproxEdit = iota // Match/mismatch operations
