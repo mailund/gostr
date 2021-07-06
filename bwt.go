@@ -185,19 +185,24 @@ func buildFMIndexExactTables(x string) *fmIndexTables {
 	}
 }
 
+func reverseString(s string) string {
+	runes := []rune(s)
+	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+
+	return string(runes)
+}
+
 // buildFMIndexExactTables builds the preprocessing tables for exact FM-index
 // searching.
 func buildFMIndexApproxTables(x string) *fmIndexTables {
 	tbls := buildFMIndexExactTables(x)
 
 	// Reverse string x and build the reverse O-table.
-	revx := []byte(x)
-	for i, j := 0, len(revx)-1; i < j; i, j = i+1, j-1 {
-		revx[i], revx[j] = revx[j], revx[i]
-	}
-
-	sa, _ := SaisWithAlphabet(string(revx), tbls.alpha)
-	revb, _ := tbls.alpha.MapToBytesWithSentinel(string(revx))
+	revx := reverseString(x)
+	sa, _ := SaisWithAlphabet(revx, tbls.alpha)
+	revb, _ := tbls.alpha.MapToBytesWithSentinel(revx)
 	tbls.rotab = NewOTab(Bwt(revb, sa), tbls.alpha.Size())
 
 	return tbls
@@ -238,10 +243,10 @@ func buildDtab(p []byte, tbls *fmIndexTables) []int {
 	minEdits := 0
 	left, right := 0, len(tbls.sa)
 
-	for i := len(p) - 1; i >= 0; i-- {
+	for i := range p {
 		a := p[i]
-		left = tbls.ctab.Rank(a) + tbls.otab.Rank(a, left)
-		right = tbls.ctab.Rank(a) + tbls.otab.Rank(a, right)
+		left = tbls.ctab.Rank(a) + tbls.rotab.Rank(a, left)
+		right = tbls.ctab.Rank(a) + tbls.rotab.Rank(a, right)
 
 		if left >= right {
 			minEdits++
@@ -255,28 +260,12 @@ func buildDtab(p []byte, tbls *fmIndexTables) []int {
 	return dtab
 }
 
-// FMIndexApproxPreprocess preprocesses the string x and returns a function
-// that you can use to efficiently search in x.
-func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, cigar string)) {
-	tbls := buildFMIndexApproxTables(x)
+func withOp(ops *EditOps, op ApproxEdit, fn func()) {
+	*ops = append(*ops, op) // remember operation
 
-	return func(p string, edits int, cb func(i int, cigar string)) {
-		if p == "" {
-			return // we can't handle empty strings...
-		}
+	fn() // do computation
 
-		pb, err := tbls.alpha.MapToBytes(p)
-		if err != nil {
-			return // p doesn't fit the alphabet, so we can't match
-		}
-
-		// first step should not include D, so we explicitly doM and doI
-		ops := make(EditOps, 0, len(p)+edits)
-		dtab := buildDtab(pb, tbls)
-		i, left, right := len(pb)-1, 0, len(tbls.sa)
-		doM(tbls, pb, i, left, right, edits, dtab, &ops, cb)
-		doI(tbls, pb, i, left, right, edits, dtab, &ops, cb)
-	}
+	*ops = (*ops)[:len(*ops)-1] // then pop operation
 }
 
 // we need to reverse to ops to make a cigar when we perform
@@ -293,91 +282,76 @@ func revOps(ops *EditOps) EditOps {
 	return rev
 }
 
-func recApproxFMIndex(tbls *fmIndexTables,
-	p []byte,
-	i, left, right, edits int,
-	dtab []int,
-	ops *EditOps,
-	fn func(int, string)) {
-	if i < 0 {
-		if edits >= 0 {
-			cigar := OpsToCigar(revOps(ops))
-			for j := left; j < right; j++ {
-				fn(int(tbls.sa[j]), cigar)
+func fmApproxReport(left, right int, ops *EditOps, sa *[]int32, cb func(i int, cigar string)) {
+	// Reverse the ops because we build them in reverse, then
+	// convert them into a cigar for reporting
+	cigar := OpsToCigar(revOps(ops))
+	for j := left; j < right; j++ {
+		cb(int((*sa)[j]), cigar)
+	}
+}
+
+// FMIndexApproxPreprocess preprocesses the string x and returns a function
+// that you can use to efficiently search in x.
+func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, cigar string)) {
+	tbls := buildFMIndexApproxTables(x)
+
+	return func(p string, edits int, cb func(i int, cigar string)) {
+		pb, err := tbls.alpha.MapToBytes(p)
+		if err != nil {
+			return // p doesn't fit the alphabet, so we can't match
+		}
+
+		ops := make(EditOps, 0, len(p)+edits) // keep track of operations
+		dtab := buildDtab(pb, tbls)           // D-table for early termination
+
+		// closure for handling the real operations. There is a lot less
+		// wrapping tables in structs or parsing them as parameters
+		// with a closure, even if it might look a bit ugly.
+		var rec func(i, left, right, edits int)
+
+		rec = func(i, left, right, edits int) {
+			if i < 0 {
+				if edits >= 0 {
+					fmApproxReport(left, right, &ops, &tbls.sa, cb)
+				}
+
+				return
 			}
+
+			if edits < dtab[i] {
+				return // not sufficient edits left
+			}
+
+			for a := byte(1); a < byte(tbls.alpha.Size()); a++ {
+				nextLeft := tbls.ctab.Rank(a) + tbls.otab.Rank(a, left)
+				nextRight := tbls.ctab.Rank(a) + tbls.otab.Rank(a, right)
+
+				if nextLeft == nextRight {
+					continue
+				}
+
+				// Do an M operation
+				withOp(&ops, M, func() {
+					if a == pb[i] {
+						rec(i-1, nextLeft, nextRight, edits)
+					} else {
+						rec(i-1, nextLeft, nextRight, edits-1)
+					}
+				})
+
+				// Do a D operation, as long as it is not the first op
+				if len(ops) > 0 {
+					withOp(&ops, D, func() { rec(i, nextLeft, nextRight, edits-1) })
+				}
+			}
+
+			// Do an I operation
+			withOp(&ops, I, func() { rec(i-1, left, right, edits-1) })
 		}
 
-		return
+		// finally, fire away with the first recursive call!
+		i, left, right := len(p)-1, 0, len(tbls.sa)
+		rec(i, left, right, edits)
 	}
-
-	if edits < dtab[i] {
-		return // not sufficient edits left
-	}
-
-	doM(tbls, p, i, left, right, edits, dtab, ops, fn)
-	doI(tbls, p, i, left, right, edits, dtab, ops, fn)
-	doD(tbls, p, i, left, right, edits, dtab, ops, fn)
-}
-
-func doM(tbls *fmIndexTables,
-	p []byte,
-	i, left, right, edits int,
-	dtab []int,
-	ops *EditOps,
-	fn func(int, string)) {
-	// record the M operation...
-	(*ops) = append(*ops, M)
-
-	for a := byte(1); a < byte(tbls.alpha.Size()); a++ {
-		nextLeft := tbls.ctab.Rank(a) + tbls.otab.Rank(a, left)
-		nextRight := tbls.ctab.Rank(a) + tbls.otab.Rank(a, right)
-
-		if nextLeft >= nextRight {
-			continue
-		}
-
-		nextEdits := edits
-		if a != p[i] {
-			nextEdits--
-		}
-
-		recApproxFMIndex(tbls, p, i-1, nextLeft, nextRight, nextEdits, dtab, ops, fn)
-	}
-
-	(*ops) = (*ops)[:len(*ops)-1]
-}
-
-func doI(tbls *fmIndexTables,
-	p []byte,
-	i, left, right, edits int,
-	dtab []int,
-	ops *EditOps,
-	fn func(int, string)) {
-	// record the I operation...
-	(*ops) = append(*ops, I)
-	recApproxFMIndex(tbls, p, i-1, left, right, edits-1, dtab, ops, fn)
-	(*ops) = (*ops)[:len(*ops)-1]
-}
-
-func doD(tbls *fmIndexTables,
-	p []byte,
-	i, left, right, edits int,
-	dtab []int,
-	ops *EditOps,
-	fn func(int, string)) {
-	// record the D operation...
-	(*ops) = append(*ops, D)
-
-	for a := byte(1); a < byte(tbls.alpha.Size()); a++ {
-		nextLeft := tbls.ctab.Rank(a) + tbls.otab.Rank(a, left)
-		nextRight := tbls.ctab.Rank(a) + tbls.otab.Rank(a, right)
-
-		if nextLeft >= nextRight {
-			continue
-		}
-
-		recApproxFMIndex(tbls, p, i, nextLeft, nextRight, edits-1, dtab, ops, fn)
-	}
-
-	(*ops) = (*ops)[:len(*ops)-1]
 }

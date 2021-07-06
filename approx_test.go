@@ -1,6 +1,7 @@
 package gostr_test
 
 import (
+	"errors"
 	"fmt"
 	"reflect"
 	"testing"
@@ -53,35 +54,53 @@ func TestOpsToCigar(t *testing.T) {
 
 func TestCigarToOps(t *testing.T) {
 	tests := []struct {
-		cigar string
-		want  gostr.EditOps
+		cigar   string
+		want    gostr.EditOps
+		wantErr error
 	}{
 		{
 			"1M",
 			gostr.EditOps{gostr.M},
+			nil,
 		},
 		{
 			"10M",
 			gostr.EditOps{gostr.M, gostr.M, gostr.M, gostr.M, gostr.M, gostr.M, gostr.M, gostr.M, gostr.M, gostr.M},
+			nil,
 		},
 		{
 			"1I",
 			gostr.EditOps{gostr.I},
+			nil,
 		},
 		{
 			"1D",
 			gostr.EditOps{gostr.D},
+			nil,
 		},
 		{
 			"1D2M3I",
 			gostr.EditOps{gostr.D, gostr.M, gostr.M, gostr.I, gostr.I, gostr.I},
+			nil,
+		},
+		{
+			"invalid",
+			gostr.EditOps{},
+			gostr.NewInvalidCigar("invalid"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.cigar, func(t *testing.T) {
-			if got := gostr.CigarToOps(tt.cigar); !reflect.DeepEqual(got, tt.want) {
+			got, gotErr := gostr.CigarToOps(tt.cigar)
+			if !errors.Is(gotErr, tt.wantErr) {
+				t.Errorf("Unexpected error, %q", gotErr)
+			} else if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CigarToOps() = %v, want %v", got, tt.want)
+			}
+
+			if gotErr != nil && gotErr.Error() != fmt.Sprintf("invalid cigar: %s", tt.cigar) {
+				t.Errorf("Unexpected error message: %s", gotErr)
 			}
 		})
 	}
@@ -100,27 +119,40 @@ func TestExtractAlignment(t *testing.T) {
 		args     args
 		wantSubx string
 		wantSubp string
+		wantErr  error
 	}{
 		{
 			"Just matches",
 			args{"acgtacgt", "gtac", 2, "4M"},
 			"gtac", "gtac",
+			nil,
 		},
 		{
 			"Deletion",
 			args{"acgtacgt", "gtc", 2, "2M1D1M"},
 			"gtac", "gt-c",
+			nil,
 		},
 		{
 			"Insertion",
 			args{"acgtacgt", "gtaac", 2, "2M1I2M"},
 			"gt-ac", "gtaac",
+			nil,
+		},
+		{
+			"Invalid",
+			args{"acgtacgt", "gtaac", 2, "invalid"},
+			"", "",
+			gostr.NewInvalidCigar("invalid"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotSubx, gotSubp := gostr.ExtractAlignment(tt.args.x, tt.args.p, tt.args.pos, tt.args.cigar)
+			gotSubx, gotSubp, gotErr := gostr.ExtractAlignment(tt.args.x, tt.args.p, tt.args.pos, tt.args.cigar)
+			if !errors.Is(gotErr, tt.wantErr) {
+				t.Fatalf("ExtractAlignment() gotErr = %v, want %v", gotErr, tt.wantErr)
+			}
 			if gotSubx != tt.wantSubx {
 				t.Errorf("ExtractAlignment() gotSubx = %v, want %v", gotSubx, tt.wantSubx)
 			}
@@ -140,30 +172,43 @@ func TestCountEdits(t *testing.T) {
 	}
 
 	tests := []struct {
-		name string
-		args args
-		want int
+		name    string
+		args    args
+		want    int
+		wantErr error
 	}{
 		{
 			"Just matches",
 			args{"acgtacgt", "gtac", 2, "4M"},
 			0, // "gtac" vs "gtac",
+			nil,
 		},
 		{
 			"Deletion",
 			args{"acgtacgt", "gtc", 2, "2M1D1M"},
 			1, // "gtac", "gt-c",
+			nil,
 		},
 		{
 			"Insertion",
 			args{"acgtacgt", "gtaac", 2, "2M1I2M"},
 			1, // "gt-ac", "gtaac",
+			nil,
+		},
+		{
+			"Invalid",
+			args{"acgtacgt", "gtaac", 2, "invalid"},
+			0, // error...
+			gostr.NewInvalidCigar("invalid"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := gostr.CountEdits(tt.args.x, tt.args.p, tt.args.pos, tt.args.cigar)
+			got, gotErr := gostr.CountEdits(tt.args.x, tt.args.p, tt.args.pos, tt.args.cigar)
+			if !errors.Is(gotErr, tt.wantErr) {
+				t.Fatalf("Unexpected error %v", gotErr)
+			}
 			if got != tt.want {
 				t.Errorf("CountEdits() got = %v, want %v", got, tt.want)
 			}
@@ -187,10 +232,10 @@ func runRandomApproxOccurencesTests(algo approxAlgo) func(*testing.T) {
 				search := algo(x)
 				for edits := 1; edits < 3; edits++ {
 					search(p, edits, func(pos int, cigar string) {
-						count := gostr.CountEdits(x, p, pos, cigar)
+						count, _ := gostr.CountEdits(x, p, pos, cigar)
 						if count > edits {
 							fmt.Println(pos, cigar)
-							ax, ap := gostr.ExtractAlignment(x, p, pos, cigar)
+							ax, ap, _ := gostr.ExtractAlignment(x, p, pos, cigar)
 							fmt.Printf("%s\n%s\n\n", ax, ap)
 
 							t.Errorf("Match at pos %d needs too many edits, %d vs %d",

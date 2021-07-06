@@ -45,9 +45,19 @@ func OpsToCigar(ops EditOps) string {
 }
 
 // CigarToOps turns a cigar string into the list of edit ops.
-func CigarToOps(cigar string) EditOps {
+func CigarToOps(cigar string) (EditOps, error) {
 	r := regexp.MustCompile(`\d+[MID]`)
 	ops := EditOps{}
+
+	// This check is really inefficient, but I don't have time to
+	// implement a better parser of cigars right now. A scan from
+	// the beginning that chumps of digits would be a lot faster.
+	// I'll leave that for later...
+	for _, s := range r.Split(cigar, -1) {
+		if s != "" {
+			return ops, &InvalidCigar{x: cigar}
+		}
+	}
 
 	for _, op := range r.FindAllString(cigar, -1) {
 		rep, _ := strconv.Atoi(op[:len(op)-1])
@@ -58,15 +68,20 @@ func CigarToOps(cigar string) EditOps {
 		}
 	}
 
-	return ops
+	return ops, nil
 }
 
 // ExtractAlignment extracts a pairwise alignment from the reference, x,
 // the read, p, the position and the edits cigar.
-func ExtractAlignment(x, p string, pos int, cigar string) (subx, subp string) {
+func ExtractAlignment(x, p string, pos int, cigar string) (subx, subp string, err error) {
 	i, j := pos, 0
 
-	for _, op := range CigarToOps(cigar) {
+	ops, err := CigarToOps(cigar)
+	if err != nil {
+		return "", "", err
+	}
+
+	for _, op := range ops {
 		switch op {
 		case M:
 			subx += string(x[i])
@@ -86,14 +101,18 @@ func ExtractAlignment(x, p string, pos int, cigar string) (subx, subp string) {
 		}
 	}
 
-	return subx, subp
+	return subx, subp, nil
 }
 
 // CountEdits counts the number of edits in the local alignment between x and p
 // specified by pos and cigar
-func CountEdits(x, p string, pos int, cigar string) int {
-	subx, subp := ExtractAlignment(x, p, pos, cigar)
+func CountEdits(x, p string, pos int, cigar string) (int, error) {
 	edits := 0
+
+	subx, subp, err := ExtractAlignment(x, p, pos, cigar)
+	if err != nil {
+		return 0, err
+	}
 
 	for i := range subx {
 		if subx[i] != subp[i] {
@@ -101,5 +120,5 @@ func CountEdits(x, p string, pos int, cigar string) int {
 		}
 	}
 
-	return edits
+	return edits, nil
 }

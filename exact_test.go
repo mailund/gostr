@@ -31,16 +31,6 @@ func bwtWrapper(x, p string, cb func(int)) {
 }
 
 func bwtApproxWrapper(x, p string, cb func(int)) {
-	if p == "" { // approx cannot handle empty p
-		for i := range x {
-			cb(i)
-		}
-
-		cb(len(x))
-
-		return
-	}
-
 	gostr.FMIndexApproxPreprocess(x)(p, 0, func(i int, _ string) { cb(i) })
 }
 
@@ -158,6 +148,7 @@ func runCheckExactOccurencesEqual(expected, algo exactAlgo) func(*testing.T) {
 				expectedHits := exactWrapper(expected)(x, p)
 				hits := exactWrapper(algo)(x, p)
 				if !test.IntArraysEqual(expectedHits, hits) {
+					t.Errorf("with x = %s and p = %s:", x, p)
 					t.Fatalf("Expected and actual hits disagree %v vs %v",
 						expectedHits, hits)
 				}
