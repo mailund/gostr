@@ -28,25 +28,19 @@ func (t *Trie) isRoot() bool {
 // setSuffixAndOutput sets the suffix link and output, provided
 // that all nodes closer to the root have their links set.
 func (t *Trie) setSuffixAndOutput(edge byte) {
-	if t.Parent.isRoot() {
-		// if our parent is the root, we can't expand,
-		// so the only suffix is the parent
-		t.Suffix = t.Parent
-	} else {
-		// follow suffix until we can insert or until we reach the root
-		for slink := t.Parent.Suffix; ; {
-			if slink.Children[edge] != nil {
-				t.Suffix = slink.Children[edge]
-				break
-			}
+	for slink := t.Parent; ; slink = slink.Suffix {
+		if slink.Children[edge] != nil && slink.Children[edge] != t {
+			// If we can extend, and it is not to ourselves (from our parent)
+			// then we have the suffix link
+			t.Suffix = slink.Children[edge]
+			break
+		}
 
-			if slink.isRoot() {
-				// We've reached the root but couldn't extend.
-				t.Suffix = slink
-				break
-			}
-
-			slink = slink.Suffix
+		if slink.isRoot() {
+			// If we couldn't extend, but got to the root, then the suffix link
+			// is the root
+			t.Suffix = slink
+			break
 		}
 	}
 
