@@ -1,6 +1,8 @@
 package gostr_test
 
 import (
+	"bytes"
+	"encoding/gob"
 	"reflect"
 	"testing"
 
@@ -89,4 +91,37 @@ func Test_MississippiBWTApprox0(t *testing.T) {
 	preproc(ps, 0, func(i int, _ string) {
 		test.CheckOccurrenceAt(t, xs, ps, i)
 	})
+}
+
+func TestOTabEncoding(t *testing.T) {
+	x := "aab"
+	alpha := gostr.NewAlphabet(x)
+	sa, _ := gostr.SaisWithAlphabet(x, alpha)
+	xb, _ := alpha.MapToBytesWithSentinel(x)
+	bwt := gostr.Bwt(xb, sa)
+
+	otab1 := gostr.NewOTab(bwt, alpha.Size())
+	otab2 := &gostr.OTab{}
+
+	if reflect.DeepEqual(otab1, otab2) {
+		t.Fatalf("The two otables should not be equal yet")
+	}
+
+	var (
+		buf bytes.Buffer
+		enc = gob.NewEncoder(&buf)
+		dec = gob.NewDecoder(&buf)
+	)
+
+	if err := enc.Encode(&otab1); err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	if err := dec.Decode(&otab2); err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	if !reflect.DeepEqual(otab1, otab2) {
+		t.Errorf("These two otables should be equal now")
+	}
 }

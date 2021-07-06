@@ -1,5 +1,10 @@
 package gostr
 
+import (
+	"bytes"
+	"encoding/gob"
+)
+
 const (
 	// Sentinel is a unique byte (zero) used in several algorithms
 	// to be different and smaller than all other letters.
@@ -158,4 +163,33 @@ func MapStringWithSentinel(x string) ([]byte, *Alphabet) {
 	xb, _ := alpha.MapToBytesWithSentinel(x)
 
 	return xb, alpha
+}
+
+// GobEncode implements the encoder interface for serialising an alphabet to a stream of bytes
+func (alpha Alphabet) GobEncode() (res []byte, err error) { //nolint:gocritic // Alphabet *has* to be value receiver here
+	defer func() { err = catchError() }()
+
+	var (
+		buf bytes.Buffer
+		enc = gob.NewEncoder(&buf)
+	)
+
+	checkError(enc.Encode(alpha._map))
+	checkError(enc.Encode(alpha._revmap))
+	checkError(enc.Encode(alpha.size))
+
+	return buf.Bytes(), nil
+}
+
+// GobDecode implements the encoder interface for serialising an alphabet to a stream of bytes
+func (alpha *Alphabet) GobDecode(b []byte) (err error) {
+	defer func() { err = catchError() }()
+
+	r := bytes.NewReader(b)
+	dec := gob.NewDecoder(r)
+
+	checkError(dec.Decode(&alpha._map))
+	checkError(dec.Decode(&alpha._revmap))
+
+	return dec.Decode(&alpha.size)
 }

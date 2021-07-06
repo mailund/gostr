@@ -1,6 +1,8 @@
 package gostr_test
 
 import (
+	"bytes"
+	"encoding/gob"
 	"reflect"
 	"strings"
 	"testing"
@@ -25,8 +27,8 @@ func checkAlphabet(
 		}
 	}
 
-	bytes, _ := alpha.MapToBytes(string(letters))
-	for i, b := range bytes {
+	bs, _ := alpha.MapToBytes(string(letters))
+	for i, b := range bs {
 		if b != byte(i+1) {
 			t.Fatalf("Expected %c to map to %d", b, i+1)
 		}
@@ -104,5 +106,33 @@ func Test_Alphabet(t *testing.T) {
 
 	if _, err := alpha.MapToIntsWithSentinel("foobar"); err == nil {
 		t.Fatalf("Expected an error when mapping to an alphabet that doesn't match")
+	}
+}
+
+func TestAlphabetEncoding(t *testing.T) {
+	x := "foobar"
+	alpha := gostr.NewAlphabet(x)
+	beta := gostr.NewAlphabet("blah")
+
+	if reflect.DeepEqual(alpha, beta) {
+		t.Fatalf("These two alphabets should *not* be equal")
+	}
+
+	var (
+		buf bytes.Buffer
+		enc = gob.NewEncoder(&buf)
+		dec = gob.NewDecoder(&buf)
+	)
+
+	if err := enc.Encode(&alpha); err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	if err := dec.Decode(&beta); err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	if !reflect.DeepEqual(alpha, beta) {
+		t.Fatalf("These two alphabets should be equal now")
 	}
 }

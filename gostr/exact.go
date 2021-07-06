@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/mailund/biof"
@@ -35,8 +36,10 @@ func initExactArgs() interface{} {
 	}
 }
 
-func getFastaRecords(f cli.InFile) map[string]string {
-	defer f.Close()
+func getFastaRecords(f io.Reader) map[string]string {
+	if closer, ok := f.(io.Closer); ok {
+		defer closer.Close()
+	}
 
 	recs, err := biof.ReadFasta(f)
 	if err != nil {
@@ -46,8 +49,10 @@ func getFastaRecords(f cli.InFile) map[string]string {
 	return recs
 }
 
-func mapFastq(f cli.InFile, fn func(*biof.FastqRecord)) error {
-	defer f.Close()
+func mapFastq(f io.Reader, fn func(*biof.FastqRecord)) error {
+	if closer, ok := f.(io.Closer); ok {
+		defer closer.Close()
+	}
 
 	return biof.ScanFastq(f, fn)
 }

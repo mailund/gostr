@@ -36,3 +36,23 @@ func (err *InvalidCigar) Is(other error) bool {
 
 	return false
 }
+
+// wrap around calls that can cause an error, to turn the
+// error into a panic that you can capture with catchError.
+func checkError(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
+// This recovers from an error panic and returns the error.
+// That way, you can set the error in a defer function and
+// you don't have to check errors everywhere in a sequence
+// of statements.
+func catchError() error {
+	if err, ok := recover().(error); ok {
+		return err
+	}
+
+	return nil
+}

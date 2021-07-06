@@ -1,5 +1,10 @@
 package gostr
 
+import (
+	"bytes"
+	"encoding/gob"
+)
+
 // Bwt gives you the Burrows-Wheeler transform of a string,
 // computed using the suffix array for the string. The
 // string should have a sentinel
@@ -156,32 +161,32 @@ func ReverseBwt(bwt []byte) []byte {
 	return x
 }
 
-// fmIndexTables contains the preprocessed tables used for FM-index
+// FMIndexTables contains the preprocessed tables used for FM-index
 // searching
-type fmIndexTables struct {
-	alpha *Alphabet
-	sa    []int32
-	ctab  *CTab
-	otab  *OTab
+type FMIndexTables struct {
+	Alpha *Alphabet
+	Sa    []int32
+	Ctab  *CTab
+	Otab  *OTab
 
 	// for approx matching
-	rotab *OTab
+	Rotab *OTab
 }
 
-// buildFMIndexExactTables builds the preprocessing tables for exact FM-index
+// BuildFMIndexExactTables builds the preprocessing tables for exact FM-index
 // searching.
-func buildFMIndexExactTables(x string) *fmIndexTables {
+func BuildFMIndexExactTables(x string) *FMIndexTables {
 	xb, alpha := MapStringWithSentinel(x)
 	sa, _ := SaisWithAlphabet(x, alpha)
 	bwt := Bwt(xb, sa)
 	ctab := NewCTab(bwt, alpha.Size())
 	otab := NewOTab(bwt, alpha.Size())
 
-	return &fmIndexTables{
-		alpha: alpha,
-		sa:    sa,
-		ctab:  ctab,
-		otab:  otab,
+	return &FMIndexTables{
+		Alpha: alpha,
+		Sa:    sa,
+		Ctab:  ctab,
+		Otab:  otab,
 	}
 }
 
@@ -194,37 +199,35 @@ func reverseString(s string) string {
 	return string(runes)
 }
 
-// buildFMIndexExactTables builds the preprocessing tables for exact FM-index
+// BuildFMIndexExactTables builds the preprocessing tables for exact FM-index
 // searching.
-func buildFMIndexApproxTables(x string) *fmIndexTables {
-	tbls := buildFMIndexExactTables(x)
+func BuildFMIndexApproxTables(x string) *FMIndexTables {
+	tbls := BuildFMIndexExactTables(x)
 
 	// Reverse string x and build the reverse O-table.
 	revx := reverseString(x)
-	sa, _ := SaisWithAlphabet(revx, tbls.alpha)
-	revb, _ := tbls.alpha.MapToBytesWithSentinel(revx)
-	tbls.rotab = NewOTab(Bwt(revb, sa), tbls.alpha.Size())
+	sa, _ := SaisWithAlphabet(revx, tbls.Alpha)
+	revb, _ := tbls.Alpha.MapToBytesWithSentinel(revx)
+	tbls.Rotab = NewOTab(Bwt(revb, sa), tbls.Alpha.Size())
 
 	return tbls
 }
 
-// FMIndexExactPreprocess preprocesses the string x and returns a function
-// that you can use to efficiently search in x.
-func FMIndexExactPreprocess(x string) func(p string, cb func(i int)) {
-	tbls := buildFMIndexExactTables(x)
-
+// FMIndexExactFromTables returns a search function based
+// on the preprocessed tables
+func FMIndexExactFromTables(tbls *FMIndexTables) func(p string, cb func(i int)) {
 	return func(p string, cb func(i int)) {
-		pb, err := tbls.alpha.MapToBytes(p)
+		pb, err := tbls.Alpha.MapToBytes(p)
 		if err != nil {
 			return // p doesn't fit the alphabet, so we can't match
 		}
 
-		left, right := 0, len(tbls.sa)
+		left, right := 0, len(tbls.Sa)
 
 		for i := len(pb) - 1; i >= 0; i-- {
 			a := pb[i]
-			left = tbls.ctab.Rank(a) + tbls.otab.Rank(a, left)
-			right = tbls.ctab.Rank(a) + tbls.otab.Rank(a, right)
+			left = tbls.Ctab.Rank(a) + tbls.Otab.Rank(a, left)
+			right = tbls.Ctab.Rank(a) + tbls.Otab.Rank(a, right)
 
 			if left >= right {
 				return // no match
@@ -232,26 +235,32 @@ func FMIndexExactPreprocess(x string) func(p string, cb func(i int)) {
 		}
 
 		for i := left; i < right; i++ {
-			cb(int(tbls.sa[i]))
+			cb(int(tbls.Sa[i]))
 		}
 	}
 }
 
-func buildDtab(p []byte, tbls *fmIndexTables) []int {
+// FMIndexExactPreprocess preprocesses the string x and returns a function
+// that you can use to efficiently search in x.
+func FMIndexExactPreprocess(x string) func(p string, cb func(i int)) {
+	return FMIndexExactFromTables(BuildFMIndexExactTables(x))
+}
+
+func buildDtab(p []byte, tbls *FMIndexTables) []int {
 	dtab := make([]int, len(p))
 
 	minEdits := 0
-	left, right := 0, len(tbls.sa)
+	left, right := 0, len(tbls.Sa)
 
 	for i := range p {
 		a := p[i]
-		left = tbls.ctab.Rank(a) + tbls.rotab.Rank(a, left)
-		right = tbls.ctab.Rank(a) + tbls.rotab.Rank(a, right)
+		left = tbls.Ctab.Rank(a) + tbls.Rotab.Rank(a, left)
+		right = tbls.Ctab.Rank(a) + tbls.Rotab.Rank(a, right)
 
 		if left >= right {
 			minEdits++
 
-			left, right = 0, len(tbls.sa)
+			left, right = 0, len(tbls.Sa)
 		}
 
 		dtab[i] = minEdits
@@ -291,13 +300,10 @@ func fmApproxReport(left, right int, ops *EditOps, sa *[]int32, cb func(i int, c
 	}
 }
 
-// FMIndexApproxPreprocess preprocesses the string x and returns a function
-// that you can use to efficiently search in x.
-func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, cigar string)) {
-	tbls := buildFMIndexApproxTables(x)
-
+// FMIndexApproxFromTables return a search function from the preprocessed tables.
+func FMIndexApproxFromTables(tbls *FMIndexTables) func(p string, edits int, cb func(i int, cigar string)) {
 	return func(p string, edits int, cb func(i int, cigar string)) {
-		pb, err := tbls.alpha.MapToBytes(p)
+		pb, err := tbls.Alpha.MapToBytes(p)
 		if err != nil {
 			return // p doesn't fit the alphabet, so we can't match
 		}
@@ -313,7 +319,7 @@ func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, 
 		rec = func(i, left, right, edits int) {
 			if i < 0 {
 				if edits >= 0 {
-					fmApproxReport(left, right, &ops, &tbls.sa, cb)
+					fmApproxReport(left, right, &ops, &tbls.Sa, cb)
 				}
 
 				return
@@ -323,9 +329,9 @@ func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, 
 				return // not sufficient edits left
 			}
 
-			for a := byte(1); a < byte(tbls.alpha.Size()); a++ {
-				nextLeft := tbls.ctab.Rank(a) + tbls.otab.Rank(a, left)
-				nextRight := tbls.ctab.Rank(a) + tbls.otab.Rank(a, right)
+			for a := byte(1); a < byte(tbls.Alpha.Size()); a++ {
+				nextLeft := tbls.Ctab.Rank(a) + tbls.Otab.Rank(a, left)
+				nextRight := tbls.Ctab.Rank(a) + tbls.Otab.Rank(a, right)
 
 				if nextLeft == nextRight {
 					continue
@@ -351,7 +357,42 @@ func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, 
 		}
 
 		// finally, fire away with the first recursive call!
-		i, left, right := len(p)-1, 0, len(tbls.sa)
+		i, left, right := len(p)-1, 0, len(tbls.Sa)
 		rec(i, left, right, edits)
 	}
+}
+
+// FMIndexApproxPreprocess preprocesses the string x and returns a function
+// that you can use to efficiently search in x.
+func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, cigar string)) {
+	return FMIndexApproxFromTables(BuildFMIndexApproxTables(x))
+}
+
+// GobEncode implements the encoder interface for serialising to a stream of bytes
+func (otab OTab) GobEncode() (res []byte, err error) {
+	defer func() { err = catchError() }()
+
+	var (
+		buf bytes.Buffer
+		enc = gob.NewEncoder(&buf)
+	)
+
+	checkError(enc.Encode(otab.nrow))
+	checkError(enc.Encode(otab.ncol))
+	checkError(enc.Encode(otab.table))
+
+	return buf.Bytes(), nil
+}
+
+// GobDecode implements the decoder interface for serialising to a stream of bytes
+func (otab *OTab) GobDecode(b []byte) (err error) {
+	defer func() { err = catchError() }()
+
+	r := bytes.NewReader(b)
+	dec := gob.NewDecoder(r)
+
+	checkError(dec.Decode(&otab.nrow))
+	checkError(dec.Decode(&otab.ncol))
+
+	return dec.Decode(&otab.table)
 }
