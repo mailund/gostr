@@ -25,8 +25,26 @@ var showST = cli.NewCommand(cli.CommandSpec{
 	},
 })
 
+type argShowTrie struct {
+	Out cli.OutFile `flag:"out" short:"o" descr:"file to write the dot description to"`
+	X   []string    `pos:"strings" descr:"the strings to build the trie from"`
+}
+
+var showTrie = cli.NewCommand(cli.CommandSpec{
+	Name:  "trie",
+	Short: "shows the structure of a trie",
+	Long:  "Shows the structure of a trie.",
+	Init: func() interface{} {
+		return &argShowTrie{Out: cli.OutFile{Writer: os.Stdout}}
+	},
+	Action: func(i interface{}) {
+		args, _ := i.(*argShowTrie)
+		gostr.BuildTrie(args.X).ToDot(args.Out)
+	},
+})
+
 var show = cli.NewMenu(
 	"show",
 	"shows algorithms and data structures",
 	"Shows algorithms and data structures. Pick a subcommand",
-	showST)
+	showST, showTrie)
