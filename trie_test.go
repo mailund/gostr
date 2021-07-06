@@ -9,7 +9,7 @@ import (
 )
 
 func TestTrie_Contains(t *testing.T) {
-	strings := []string{"foo", "foobar", "bar", "baz"}
+	strings := []string{"foo", "foobar", "bar", "baz", "abc", "bca", "a", "cb", "b"}
 	trie := gostr.BuildTrie(strings)
 
 	for _, x := range strings {
