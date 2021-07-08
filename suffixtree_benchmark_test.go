@@ -41,16 +41,12 @@ func publicTraversal(n gostr.STNode) int {
 		val := 0
 
 		for _, child := range n.Inner().Children {
-			if child.NodeType != gostr.UnInitialised {
+			if !child.IsNil() {
 				val += publicTraversal(child)
 			}
 		}
 
 		return val
-
-	case gostr.UnInitialised:
-		// do nothing
-		return 0
 	}
 
 	return 0 // Unreachable, but we need to return...

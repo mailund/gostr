@@ -27,14 +27,10 @@ func checkPathLabels(t *testing.T, n gostr.STNode, algo string, st *gostr.Suffix
 
 	case gostr.Inner:
 		for _, child := range n.Inner().Children {
-			if child.NodeType != gostr.UnInitialised {
+			if !child.IsNil() {
 				checkPathLabels(t, child, algo, st)
 			}
 		}
-
-	case gostr.UnInitialised:
-		// do nothing
-		break
 	}
 }
 

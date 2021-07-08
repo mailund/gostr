@@ -25,11 +25,6 @@ func (el EdgeLabel) Revmap(alpha *Alphabet) string {
 type STNodeType int
 
 const (
-	// UnInitialised works both as a "nil" and as an easy
-	// way to write functions on nodes. Switch on the type,
-	// but only handle Leaf and Inner, and you skip the
-	// nil nodes that way.
-	UnInitialised STNodeType = iota
 	// Leaf means that the node is a leaf
 	Leaf STNodeType = iota
 	// Inner means that the node is an inner node
@@ -65,7 +60,7 @@ type STNode struct {
 // IsNil returns true if the node represents a nil pointer. If it does, you cannot
 // cast it to any other node type.
 func (n STNode) IsNil() bool {
-	return n.NodeType == UnInitialised
+	return n.ptr == nil
 }
 
 // Shared returns a pointer to the shared part of leaves and inner nodes. It is an
@@ -126,12 +121,10 @@ func (n STNode) LeafIndices(fn func(int)) {
 
 	case Inner:
 		for _, child := range n.Inner().Children {
-			child.LeafIndices(fn)
+			if !child.IsNil() {
+				child.LeafIndices(fn)
+			}
 		}
-
-	case UnInitialised:
-		// do nothing
-		break
 	}
 }
 
@@ -167,12 +160,10 @@ func (n STNode) ToDot(alpha *Alphabet, w io.Writer) {
 		}
 
 		for _, child := range v.Children {
-			child.ToDot(alpha, w)
+			if !child.IsNil() {
+				child.ToDot(alpha, w)
+			}
 		}
-
-	case UnInitialised:
-		// do nothing
-		break
 	}
 }
 
@@ -415,10 +406,6 @@ func (st *SuffixTree) ComputeSuffixAndLcpArray() (sa, lcp []int32) {
 				traverse(child, left, depth+int32(len(child.Shared().EdgeLabel)))
 				left = depth // The remaining children should use depth
 			}
-
-		case UnInitialised:
-			// do nothing
-			break
 		}
 	}
 
