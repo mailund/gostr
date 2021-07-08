@@ -190,22 +190,13 @@ func BuildFMIndexExactTables(x string) *FMIndexTables {
 	}
 }
 
-func reverseString(s string) string {
-	runes := []rune(s)
-	for i, j := 0, len(runes)-1; i < j; i, j = i+1, j-1 {
-		runes[i], runes[j] = runes[j], runes[i]
-	}
-
-	return string(runes)
-}
-
 // BuildFMIndexExactTables builds the preprocessing tables for exact FM-index
 // searching.
 func BuildFMIndexApproxTables(x string) *FMIndexTables {
 	tbls := BuildFMIndexExactTables(x)
 
 	// Reverse string x and build the reverse O-table.
-	revx := reverseString(x)
+	revx := ReverseString(x)
 	sa, _ := SaisWithAlphabet(revx, tbls.Alpha)
 	revb, _ := tbls.Alpha.MapToBytesWithSentinel(revx)
 	tbls.Rotab = NewOTab(Bwt(revb, sa), tbls.Alpha.Size())

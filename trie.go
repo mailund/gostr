@@ -21,7 +21,8 @@ type Trie struct {
 	Children [256]*Trie // If you map the alphabet, you could save some space...
 }
 
-func (t *Trie) isRoot() bool {
+// IsRoot returns true if and only if this trie is the root node.
+func (t *Trie) IsRoot() bool {
 	return t.Parent == nil
 }
 
@@ -36,7 +37,7 @@ func (t *Trie) setSuffixAndOutput(edge byte) {
 			break
 		}
 
-		if slink.isRoot() {
+		if slink.IsRoot() {
 			// If we couldn't extend, but got to the root, then the suffix link
 			// is the root
 			t.Suffix = slink
@@ -69,7 +70,7 @@ func (t *Trie) SetSuffixAndOutput() {
 	}
 }
 
-// Contains check if the trie t contains the string p
+// Contains check if the trie contains the string p
 func (t *Trie) Contains(p string) bool {
 	if p == "" {
 		return t.Label >= 0
@@ -84,7 +85,7 @@ func (t *Trie) Contains(p string) bool {
 }
 
 // toDot writes the trie rooted at t to the writer, but does not
-// include the digrahp { ... } bit. ToDot does.
+// include the "digrahp { ... }" bit. ToDot does.
 func (t *Trie) toDot(w io.Writer) {
 	if t.Label >= 0 {
 		fmt.Fprintf(w, "\"%p\"[label=\"%d\", shape=circle]\n", t, t.Label)
@@ -92,7 +93,7 @@ func (t *Trie) toDot(w io.Writer) {
 		fmt.Fprintf(w, "\"%p\"[label=\"\", shape=point]\n", t)
 	}
 
-	if t.Suffix != nil && !t.Suffix.isRoot() {
+	if t.Suffix != nil && !t.Suffix.IsRoot() {
 		fmt.Fprintf(w, `"%p" -> "%p"[style=dotted, color=red];`, t, t.Suffix)
 	}
 
