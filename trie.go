@@ -70,18 +70,24 @@ func (t *Trie) SetSuffixAndOutput() {
 	}
 }
 
+// FindNode finds the node at the end of the string,
+// or returns nil if there isn't one.
+func (t *Trie) FindNode(p string) *Trie {
+	switch {
+	case t == nil:
+		return nil
+
+	case p == "":
+		return t
+	}
+
+	return t.Children[p[0]].FindNode(p[1:])
+}
+
 // Contains check if the trie contains the string p
 func (t *Trie) Contains(p string) bool {
-	if p == "" {
-		return t.Label >= 0
-	}
-
-	child := t.Children[p[0]]
-	if child == nil {
-		return false
-	}
-
-	return child.Contains(p[1:])
+	n := t.FindNode(p)
+	return n != nil && n.Label >= 0
 }
 
 // toDot writes the trie rooted at t to the writer, but does not
