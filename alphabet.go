@@ -62,7 +62,7 @@ func (alpha *Alphabet) mapBytes(x string, out []byte) ([]byte, error) {
 	for i := 0; i < len(x); i++ {
 		b := alpha._map[x[i]]
 		if b == 0 && x[i] != 0 {
-			return []byte{}, &AlphabetLookupError{b}
+			return []byte{}, &AlphabetLookupError{x[i]}
 		}
 
 		out[i] = b
@@ -167,7 +167,7 @@ func MapStringWithSentinel(x string) ([]byte, *Alphabet) {
 
 // GobEncode implements the encoder interface for serialising an alphabet to a stream of bytes
 func (alpha Alphabet) GobEncode() (res []byte, err error) { //nolint:gocritic // Alphabet *has* to be value receiver here
-	defer func() { err = catchError() }()
+	defer catchError(&err)
 
 	var (
 		buf bytes.Buffer
@@ -183,7 +183,7 @@ func (alpha Alphabet) GobEncode() (res []byte, err error) { //nolint:gocritic //
 
 // GobDecode implements the encoder interface for serialising an alphabet to a stream of bytes
 func (alpha *Alphabet) GobDecode(b []byte) (err error) {
-	defer func() { err = catchError() }()
+	defer catchError(&err)
 
 	r := bytes.NewReader(b)
 	dec := gob.NewDecoder(r)

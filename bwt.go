@@ -370,7 +370,7 @@ func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, 
 
 // GobEncode implements the encoder interface for serialising to a stream of bytes
 func (otab OTab) GobEncode() (res []byte, err error) {
-	defer func() { err = catchError() }()
+	defer catchError(&err)
 
 	var (
 		buf bytes.Buffer
@@ -386,7 +386,7 @@ func (otab OTab) GobEncode() (res []byte, err error) {
 
 // GobDecode implements the decoder interface for serialising to a stream of bytes
 func (otab *OTab) GobDecode(b []byte) (err error) {
-	defer func() { err = catchError() }()
+	defer catchError(&err)
 
 	r := bytes.NewReader(b)
 	dec := gob.NewDecoder(r)
