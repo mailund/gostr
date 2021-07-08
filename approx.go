@@ -13,6 +13,7 @@ type ApproxEdit int
 // EditOps is a type for a sequence of edit operations
 type EditOps = []ApproxEdit
 
+// Approximative matching edit operations.
 const (
 	M ApproxEdit = iota // Match/mismatch operations
 	I            = iota // Insertion operations
