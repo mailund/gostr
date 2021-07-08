@@ -28,7 +28,7 @@ func (err *InvalidCigar) Error() string {
 	return fmt.Sprintf("invalid cigar: %s", err.x)
 }
 
-// Error implements the Is interface for errors.
+// Is implements the Is interface for errors.
 func (err *InvalidCigar) Is(other error) bool {
 	if ic, ok := other.(*InvalidCigar); ok {
 		return ic.x == err.x
