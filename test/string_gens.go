@@ -33,6 +33,29 @@ func RandomStringRange(min, max int, alpha string, rng *rand.Rand) string {
 	return RandomStringN(n, alpha, rng)
 }
 
+func FibonacciString(n int) string {
+	const (
+		fib0 = "a"
+		fib1 = "b"
+	)
+
+	switch n {
+	case 0:
+		return fib0
+
+	case 1:
+		return fib1
+
+	default:
+		a, b := fib0, fib1
+		for ; n > 1; n-- {
+			a, b = b, a+b
+		}
+
+		return b
+	}
+}
+
 // SingletonString generates a string of length n consisting only of the letter a
 func SingletonString(n int, a byte) string {
 	bytes := make([]byte, n)
@@ -95,6 +118,10 @@ func GenerateTestStrings(
 	callback func(x string)) {
 	GenerateRandomTestStrings(min, max, rng, callback)
 	GenerateSingletonTestStrings(min, max, rng, callback)
+
+	for n := 0; n < 10; n++ {
+		callback(FibonacciString(n))
+	}
 }
 
 // GenerateTestStringsAndPatterns generates a set of strings (x, p) where x is a string
@@ -132,4 +159,20 @@ func GenerateTestStringsAndPatterns(min, max int, rng *rand.Rand, callback func(
 				callback(x, PickRandomPrefix(x, rng))
 			}
 		})
+
+	for n := 3; n < 10; n++ {
+		x := FibonacciString(n)
+
+		for j := 0; j < 10; j++ {
+			callback(x, PickRandomPrefix(x, rng))
+		}
+
+		for j := 0; j < 10; j++ {
+			callback(x, PickRandomSuffix(x, rng))
+		}
+
+		for j := 0; j < 10; j++ {
+			callback(x, PickRandomSubstring(x, rng))
+		}
+	}
 }
