@@ -33,6 +33,7 @@ func RandomStringRange(min, max int, alpha string, rng *rand.Rand) string {
 	return RandomStringN(n, alpha, rng)
 }
 
+// FibonacciString returns the n'th Fibonacci string.
 func FibonacciString(n int) string {
 	const (
 		fib0 = "a"
