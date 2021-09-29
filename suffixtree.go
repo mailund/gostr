@@ -252,27 +252,26 @@ func lenSharedPrefix(x, y []byte) int {
 	return i
 }
 
-// x is the underlying strings for nodes, y is the string
-// for inter (which when we construct is also x, but when we
-// search it is likely another string).
 func sscan(n STNode, y []byte) (node STNode, depth int, search []byte) {
-	if len(y) == 0 {
-		return n, 0, y
-	}
+	for {
+		if len(y) == 0 {
+			return n, 0, y
+		}
 
-	// If we scan on a node, it is an inner node.
-	v := n.Inner().Children[y[0]]
-	if v.IsNil() {
-		return n, 0, y
-	}
+		// If we scan on a node, it is an inner node.
+		v := n.Inner().Children[y[0]]
+		if v.IsNil() {
+			return n, 0, y
+		}
 
-	i := lenSharedPrefix(v.Shared().EdgeLabel, y)
-	if i == len(y) || i < len(v.Shared().EdgeLabel) {
-		return v, i, y
-	}
+		i := lenSharedPrefix(v.Shared().EdgeLabel, y)
+		if i == len(y) || i < len(v.Shared().EdgeLabel) {
+			return v, i, y
+		}
 
-	// Continue from v (exploiting tail call optimisation)
-	return sscan(v, y[i:])
+		// Continue from v: sscan(v, y[i:])
+		n, y = v, y[i:]
+	}
 }
 
 // NaiveST is the naive O(n²) construction algorithm.
@@ -297,20 +296,22 @@ func NaiveST(x string) *SuffixTree {
 }
 
 func fscan(n STNode, y []byte) (node STNode, depth int, search []byte) {
-	if len(y) == 0 {
-		return n, 0, y
+	for {
+		if len(y) == 0 {
+			return n, 0, y
+		}
+
+		// If we scan on a node, it is an inner node
+		v := n.Inner().Children[y[0]]
+
+		i := min(len(v.Shared().EdgeLabel), len(y))
+		if i == len(y) {
+			return v, i, y
+		}
+
+		// Continue from v: fscan(v, y[i:])
+		n, y = v, y[i:]
 	}
-
-	// If we scan on a node, it is an inner node
-	v := n.Inner().Children[y[0]]
-
-	i := min(len(v.Shared().EdgeLabel), len(y))
-	if i == len(y) {
-		return v, i, y
-	}
-
-	// Continue from v (exploiting tail call optimisation)
-	return fscan(v, y[i:])
 }
 
 func (v *SharedNode) suffix() []byte {
