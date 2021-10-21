@@ -10,11 +10,23 @@ import (
 	"github.com/mailund/gostr"
 )
 
+func stNaiveWrapper(x, p string, callback func(int)) {
+	st := gostr.NaiveST(x)
+	st.Search(p, callback)
+}
+
+func mcCreightWrapper(x, p string, callback func(int)) {
+	st := gostr.McCreight(x)
+	st.Search(p, callback)
+}
+
 var exactAlgos = map[string]func(x, p string, fn func(int)){
-	"naive":  gostr.Naive,
-	"border": gostr.BorderSearch,
-	"kmp":    gostr.Kmp,
-	"bmh":    gostr.Bmh,
+	"naive":        gostr.Naive,
+	"border":       gostr.BorderSearch,
+	"kmp":          gostr.Kmp,
+	"bmh":          gostr.Bmh,
+	"st-naive":     stNaiveWrapper,
+	"st-mccreight": mcCreightWrapper,
 }
 
 type exactArgs struct {
