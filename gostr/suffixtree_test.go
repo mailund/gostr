@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mailund/gostr"
-	"github.com/mailund/gostr/test"
+	"github.com/mailund/gostr/gostr"
+	"github.com/mailund/gostr/testutils"
 )
 
 func checkPathLabels(t *testing.T, n gostr.STNode, algo string, st *gostr.SuffixTree) {
@@ -146,7 +146,7 @@ func Test_STRandomStrings(t *testing.T) {
 	maxlen := 100 // max length 100 (so we can still inspect them)
 
 	for i := 0; i < n; i++ {
-		x := test.RandomStringRange(0, maxlen, "acgt", rng)
+		x := testutils.RandomStringRange(0, maxlen, "acgt", rng)
 		t.Logf(`Testing string "%s".`, x)
 
 		for i := range algos {

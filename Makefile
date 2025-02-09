@@ -1,5 +1,5 @@
 tests:
-	go test -v ./...
+	go test ./...
 
 lint:
 	golangci-lint run

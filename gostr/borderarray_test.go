@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mailund/gostr"
-	"github.com/mailund/gostr/test"
+	"github.com/mailund/gostr/gostr"
+	"github.com/mailund/gostr/testutils"
 )
 
 func Test_BorderarrayBasics(t *testing.T) {
@@ -61,8 +61,8 @@ func checkBorders(t *testing.T, x string, ba []int) {
 }
 
 func Test_Borderarray(t *testing.T) {
-	rng := test.NewRandomSeed(t)
-	test.GenerateTestStrings(10, 20, rng,
+	rng := testutils.NewRandomSeed(t)
+	testutils.GenerateTestStrings(10, 20, rng,
 		func(x string) {
 			checkBorders(t, x, gostr.Borderarray(x))
 		})
@@ -85,8 +85,8 @@ func checkStrict(t *testing.T, x string, ba []int) bool {
 }
 
 func Test_StrictBorderarray(t *testing.T) {
-	rng := test.NewRandomSeed(t)
-	test.GenerateTestStrings(10, 20, rng,
+	rng := testutils.NewRandomSeed(t)
+	testutils.GenerateTestStrings(10, 20, rng,
 		func(x string) {
 			ba := gostr.StrictBorderarray(x)
 			checkBorders(t, x, ba)

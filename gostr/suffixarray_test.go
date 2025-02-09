@@ -4,8 +4,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mailund/gostr"
-	"github.com/mailund/gostr/test"
+	"github.com/mailund/gostr/gostr"
+	"github.com/mailund/gostr/testutils"
 )
 
 type SAAlgo = func(x string) []int32
@@ -54,10 +54,10 @@ func runConsistencyTest(algo SAAlgo) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		rng := test.NewRandomSeed(t)
-		test.GenerateTestStrings(50, 150, rng,
+		rng := testutils.NewRandomSeed(t)
+		testutils.GenerateTestStrings(50, 150, rng,
 			func(x string) {
-				test.CheckSuffixArray(t, x, algo(x))
+				testutils.CheckSuffixArray(t, x, algo(x))
 			})
 	}
 }

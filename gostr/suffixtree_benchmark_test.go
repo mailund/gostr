@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mailund/gostr"
-	"github.com/mailund/gostr/test"
+	"github.com/mailund/gostr/gostr"
+	"github.com/mailund/gostr/testutils"
 )
 
 func benchmarkConstruction(
@@ -17,7 +17,7 @@ func benchmarkConstruction(
 
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
-	x := test.RandomStringN(n, "abcdefg", rng)
+	x := testutils.RandomStringN(n, "abcdefg", rng)
 
 	for i := 0; i < b.N; i++ {
 		constructor(x)
@@ -63,7 +63,7 @@ func visitorTraversal(n gostr.STNode) int {
 func Test_Traversal(t *testing.T) {
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
-	x := test.RandomStringRange(500, 1000, "abcdefg", rng)
+	x := testutils.RandomStringRange(500, 1000, "abcdefg", rng)
 	st := gostr.NaiveST(x)
 
 	public := publicTraversal(st.Root)
@@ -82,7 +82,7 @@ func benchmarkTraversal(b *testing.B, traversal func(gostr.STNode) int) {
 
 	seed := time.Now().UTC().UnixNano()
 	rng := rand.New(rand.NewSource(seed))
-	x := test.RandomStringN(1000, "abcdefg", rng)
+	x := testutils.RandomStringN(1000, "abcdefg", rng)
 	st := gostr.NaiveST(x)
 
 	traversal(st.Root) // first traversal sorts the children...

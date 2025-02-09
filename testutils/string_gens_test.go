@@ -1,10 +1,10 @@
-package test_test
+package testutils_test
 
 import (
 	"fmt"
 	"testing"
 
-	"github.com/mailund/gostr/test"
+	test "github.com/mailund/gostr/testutils"
 )
 
 func TestFibonacciString(t *testing.T) {

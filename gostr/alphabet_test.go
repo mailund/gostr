@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mailund/gostr"
+	"github.com/mailund/gostr/gostr"
 )
 
 func checkAlphabet(
@@ -16,16 +16,33 @@ func checkAlphabet(
 	t.Helper()
 
 	alpha := gostr.NewAlphabet(x)
+	checkAlphabetSize(t, alpha, letters)
+	checkAlphabetContains(t, alpha, x)
+	checkAlphabetMapping(t, alpha, letters)
+	y := checkAlphabetMapToBytesWithSentinel(t, alpha, x, expectedMapped)
+	checkAlphabetRevmap(t, alpha, x, y)
+	checkAlphabetInt(t, x, alpha, y, expectedMapped)
+}
+
+func checkAlphabetSize(t *testing.T, alpha *gostr.Alphabet, letters []byte) {
+	t.Helper()
 	if alpha.Size() != len(letters)+1 { // +1 for sentinel
 		t.Fatalf("Expected size %d, got %d", len(letters)+1, alpha.Size())
 	}
+}
 
+func checkAlphabetContains(t *testing.T, alpha *gostr.Alphabet, x string) {
+	t.Helper()
 	for i := 0; i < len(x); i++ {
 		a := x[i]
 		if !alpha.Contains(a) {
 			t.Fatalf("Expected alphabet to contain %c.", a)
 		}
 	}
+}
+
+func checkAlphabetMapping(t *testing.T, alpha *gostr.Alphabet, letters []byte) {
+	t.Helper()
 
 	bs, _ := alpha.MapToBytes(string(letters))
 	for i, b := range bs {
@@ -33,7 +50,11 @@ func checkAlphabet(
 			t.Fatalf("Expected %c to map to %d", b, i+1)
 		}
 	}
+}
 
+func checkAlphabetMapToBytesWithSentinel(t *testing.T, alpha *gostr.Alphabet, x string, expectedMapped []byte) []byte {
+	t.Helper()
+	
 	y, err := alpha.MapToBytesWithSentinel(x)
 	if err != nil {
 		t.Fatalf("Error mapping string %s", x)
@@ -42,6 +63,11 @@ func checkAlphabet(
 	if !reflect.DeepEqual(y, expectedMapped) {
 		t.Fatalf("We expected the mapped string to be %v but it is %v", expectedMapped, y)
 	}
+	return y
+}
+
+func checkAlphabetRevmap(t *testing.T, alpha *gostr.Alphabet, x string, y []byte) {
+	t.Helper()
 
 	xx := strings.ReplaceAll(x, string(gostr.Sentinel), string(gostr.SentinelSymbol))
 
@@ -58,8 +84,6 @@ func checkAlphabet(
 	if zz != z+string(gostr.SentinelSymbol) {
 		t.Fatalf(`The last character in "%s" should be sentinel`, zz)
 	}
-
-	checkAlphabetInt(t, x, alpha, y, expectedMapped)
 }
 
 func checkAlphabetInt(t *testing.T, x string, alpha *gostr.Alphabet, y, expectedMapped []byte) {
@@ -80,7 +104,18 @@ func checkAlphabetInt(t *testing.T, x string, alpha *gostr.Alphabet, y, expected
 	}
 }
 
-func Test_Alphabet(t *testing.T) {
+// TestAlphabet tests the functionality of the Alphabet struct and its methods.
+// It verifies the correct mapping of strings to byte slices and integer slices
+// based on the provided alphabet. It also checks for errors when attempting to
+// map strings using an incorrect alphabet.
+//
+// The test cases include:
+// - Mapping a string to a byte slice and verifying the result.
+// - Mapping a string with a sentinel character and verifying the result.
+// - Ensuring that mapping a string with an incorrect alphabet returns an error.
+func TestAlphabet(t *testing.T) {
+	t.Parallel()
+
 	checkAlphabet(t, "foo", []byte{'f', 'o'}, []byte{1, 2, 2, 0})
 
 	checkAlphabet(t, "foobar", []byte{'a', 'b', 'f', 'o', 'r'}, []byte{3, 4, 4, 2, 1, 5, 0})
@@ -109,7 +144,13 @@ func Test_Alphabet(t *testing.T) {
 	}
 }
 
+// TestAlphabetEncoding tests the encoding and decoding of the Alphabet type
+// using the gob package. It ensures that two different alphabets are not
+// equal initially, but become equal after encoding and decoding one of them.
+// The test runs in parallel to improve test performance.
 func TestAlphabetEncoding(t *testing.T) {
+	t.Parallel()
+
 	x := "foobar"
 	alpha := gostr.NewAlphabet(x)
 	beta := gostr.NewAlphabet("blah")

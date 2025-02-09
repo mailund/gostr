@@ -1,220 +1,389 @@
-package main
+package gostr
 
 import (
+	"bytes"
 	"encoding/gob"
-	"fmt"
-	"log"
-	"os"
-
-	"github.com/mailund/biof"
-	"github.com/mailund/cli"
-	"github.com/mailund/gostr"
 )
 
-func preprocFile(genomeFileName string) string {
-	return genomeFileName + ".gostr_bwt"
-}
+// Bwt gives you the Burrows-Wheeler transform of a string,
+// computed using the suffix array for the string. The
+// string should have a sentinel
+func Bwt(x []byte, sa []int32) []byte {
+	bwt := make([]byte, len(x))
 
-type bwtPreprocArgs struct {
-	GenomeName string `pos:"genome" descr:"FASTA file to preprocess."`
-}
-
-func initBwtPreproc() interface{} {
-	return &bwtPreprocArgs{}
-}
-
-func bwtPreproc(i interface{}) {
-	args, ok := i.(*bwtPreprocArgs)
-	if !ok {
-		panic("Unexpected arguments to bwtPreproc")
-	}
-
-	// We need the name of the file to make the preprocessed
-	// file name, so we can't use an InFile here. We must
-	// explicitly open and read the genome.
-	genomeFile, err := os.Open(args.GenomeName)
-	if err != nil {
-		log.Fatalf("Couldn't open %s: %s", args.GenomeName, err)
-	}
-
-	recs := getFastaRecords(genomeFile)
-	genomeFile.Close()
-
-	outFile, err := os.Create(preprocFile(args.GenomeName))
-	if err != nil {
-		log.Fatalf("Couldn't open %s: %s", preprocFile(args.GenomeName), err)
-	}
-
-	processed := map[string]*gostr.FMIndexTables{}
-	for chrom, seq := range recs {
-		// We always preprocess the full set, even if it is
-		// slower if we intent to do exact matching
-		processed[chrom] = gostr.BuildFMIndexApproxTables(seq)
-	}
-
-	enc := gob.NewEncoder(outFile)
-	if err := enc.Encode(processed); err != nil {
-		log.Fatal("encode error:", err)
-	}
-
-	if err := outFile.Close(); err != nil {
-		log.Fatalf("Error closing file %s: %s", preprocFile(args.GenomeName), err)
-	}
-}
-
-var bwtPreprocess = cli.NewCommand(cli.CommandSpec{
-	Name:   "preproc",
-	Short:  "preprocess bwt/fm-index",
-	Long:   "Build tables for fast mapping.",
-	Init:   initBwtPreproc,
-	Action: bwtPreproc,
-})
-
-type bwtExactArgs struct {
-	Out        cli.OutFile `flag:"out" short:"o" descr:"output file"`
-	GenomeName string      `pos:"genome" descr:"FASTA file to preprocess."`
-	Reads      cli.InFile  `pos:"reads" descr:"FASTQ file containing the reads"`
-}
-
-func initBwtExact() interface{} {
-	return &bwtExactArgs{Out: cli.OutFile{Writer: os.Stdout}}
-}
-
-func readPreprocTables(fname string) map[string]*gostr.FMIndexTables {
-	infile, err := os.Open(fname)
-	if err != nil {
-		fmt.Fprintf(os.Stderr,
-			"Couldn't open file: %s, did you remember to preprocess?",
-			fname)
-		os.Exit(1)
-	}
-
-	recs := map[string]*gostr.FMIndexTables{}
-	dec := gob.NewDecoder(infile)
-
-	if err := dec.Decode(&recs); err != nil {
-		log.Fatalf("Error decoding preprocessing file %s: %s",
-			fname, err)
-	}
-
-	infile.Close()
-
-	return recs
-}
-
-func bwtExact(i interface{}) {
-	args, ok := i.(*bwtExactArgs)
-	if !ok {
-		panic("Unexpected arguments to bwtExact")
-	}
-
-	recs := readPreprocTables(preprocFile(args.GenomeName))
-
-	// Wrap the preprocessed tables in functions...
-	searchFuncs := map[string]func(p string, cb func(i int)){}
-	for rname, tbls := range recs {
-		searchFuncs[rname] = gostr.FMIndexExactFromTables(tbls)
-	}
-
-	// FINALLY! we get to mapping. First the function for the mapping...
-	mapper := func(rec *biof.FastqRecord) {
-		for rname, search := range searchFuncs {
-			search(rec.Read, func(pos int) {
-				cigar := fmt.Sprintf("%dM", len(rec.Read))
-				if err := biof.PrintSam(args.Out, rec.Name, rname, pos, cigar, rec.Read, rec.Qual); err != nil {
-					fmt.Fprintf(os.Stderr, "Error writing to SAM file: %s\n", err)
-				}
-			})
+	for i := 0; i < len(sa); i++ {
+		j := sa[i]
+		if j == 0 {
+			bwt[i] = 0
+		} else {
+			bwt[i] = x[j-1]
 		}
 	}
 
-	// ...then the actual scan
-	if err := mapFastq(args.Reads, mapper); err != nil {
-		fmt.Fprintf(os.Stderr, "Error scanning reads: %s\n", err)
-		os.Exit(1)
-	}
-
-	// Finally, some clean up
-	args.Reads.Close()
-
-	if err := args.Out.Close(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error closing output file: %s", err)
-		os.Exit(1)
-	}
+	return bwt
 }
 
-var bwtExactMap = cli.NewCommand(cli.CommandSpec{
-	Name:   "exact",
-	Short:  "exact mapping",
-	Long:   "Search for exact matches in genome.",
-	Init:   initBwtExact,
-	Action: bwtExact,
-})
-
-type bwtApproxArgs struct {
-	Out        cli.OutFile `flag:"out" short:"o" descr:"output file"`
-	Edits      int         `flag:"edits" short:"d" descr:"maximun number of edits to consider"`
-	GenomeName string      `pos:"genome" descr:"FASTA file to preprocess."`
-	Reads      cli.InFile  `pos:"reads" descr:"FASTQ file containing the reads"`
+// CTab Structur holding the C-table for BWT search.
+// This is a map from letters in the alphabet to the
+// cumulative sum of how often we see letters in the
+// BWT
+type CTab struct {
+	CumSum []int
 }
 
-func initBwtApprox() interface{} {
-	return &bwtApproxArgs{
-		Out:   cli.OutFile{Writer: os.Stdout},
-		Edits: 1,
-	}
+// Rank How many times does the BWT hold a letter smaller
+// than a? Undefined behaviour if a isn't in the table.
+func (ctab *CTab) Rank(a byte) int {
+	return ctab.CumSum[a]
 }
 
-func bwtApprox(i interface{}) {
-	args, ok := i.(*bwtApproxArgs)
-	if !ok {
-		panic("Unexpected arguments to bwtApprox")
+// NewCTab builds the c-table from a string.
+func NewCTab(bwt []byte, asize int) *CTab {
+	// First, count how often we see each character
+	counts := make([]int, asize)
+	for _, b := range bwt {
+		counts[b]++
+	}
+	// Then get the accumulative sum
+	var n int
+	for i, count := range counts {
+		counts[i] = n
+		n += count
 	}
 
-	recs := readPreprocTables(preprocFile(args.GenomeName))
+	return &CTab{counts}
+}
 
-	// Wrap the preprocessed tables in functions...
-	searchFuncs := map[string]func(p string, edits int, cb func(i int, cigar string)){}
-	for rname, tbls := range recs {
-		searchFuncs[rname] = gostr.FMIndexApproxFromTables(tbls)
+// OTab Holds the o-table (rank table) from a BWT string
+type OTab struct {
+	nrow, ncol int
+	table      []int
+}
+
+func (otab *OTab) offset(a byte, i int) int {
+	// -1 to a because we don't store the sentinel
+	// and -1 to i because we don't store the first
+	// row (which is always zero)
+	return otab.ncol*(int(a)-1) + (i - 1)
+}
+
+func (otab *OTab) get(a byte, i int) int {
+	return otab.table[otab.offset(a, i)]
+}
+
+func (otab *OTab) set(a byte, i, val int) {
+	otab.table[otab.offset(a, i)] = val
+}
+
+// Rank How many times do we see letter a before index i
+// in the BWT string?
+func (otab *OTab) Rank(a byte, i int) int {
+	// We don't explicitly store the first column,
+	// since it is always empty anyway.
+	if i == 0 {
+		return 0
 	}
 
-	// FINALLY! we get to mapping. First the function for the mapping...
-	mapper := func(rec *biof.FastqRecord) {
-		for rname, search := range searchFuncs {
-			search(rec.Read, args.Edits, func(pos int, cigar string) {
-				if err := biof.PrintSam(args.Out, rec.Name, rname, pos, cigar, rec.Read, rec.Qual); err != nil {
-					fmt.Fprintf(os.Stderr, "Error writing to SAM file: %s\n", err)
-				}
-			})
+	return otab.get(a, i)
+}
+
+// NewOTab builds the o-table from a string. It uses
+// the suffix array to get the BWT and a c-table
+// to handle the alphabet.
+func NewOTab(bwt []byte, asize int) *OTab {
+	// We index for all characters except $, so
+	// nrow is the alphabet size minus one.
+	// We index all indices [0,len(sa)], but we emulate
+	// row 0, since it is always zero, so we only need
+	// len(sa) columns.
+	nrow, ncol := asize-1, len(bwt)
+	table := make([]int, nrow*ncol)
+	otab := OTab{nrow, ncol, table}
+
+	// The character at the beginning of bwt gets a count
+	// of one at row one.
+	otab.set(bwt[0], 1, 1)
+
+	// The remaining entries either copies or increment from
+	// the previous column. We count a from 1 to alpha size
+	// to skip the sentinel, then -1 for the index
+	for a := 1; a < asize; a++ {
+		ba := byte(a) // get the right type for accessing otab
+		for i := 2; i <= len(bwt); i++ {
+			val := otab.get(ba, i-1)
+			if bwt[i-1] == ba {
+				val++
+			}
+
+			otab.set(ba, i, val)
 		}
 	}
 
-	// ...then the actual scan
-	if err := mapFastq(args.Reads, mapper); err != nil {
-		fmt.Fprintf(os.Stderr, "Error scanning reads: %s\n", err)
-		os.Exit(1)
+	return &otab
+}
+
+func countLetters(x []byte) int {
+	const noBytes = 256
+
+	observed := make([]int, noBytes)
+	for _, a := range x {
+		observed[a] = 1
 	}
 
-	// Finally, some clean up
-	args.Reads.Close()
+	asize := 0
+	for _, i := range observed {
+		asize += i
+	}
 
-	if err := args.Out.Close(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error closing output file: %s", err)
-		os.Exit(1)
+	return asize
+}
+
+// ReverseBwt reconstructs the original string from the bwt string.
+func ReverseBwt(bwt []byte) []byte {
+	asize := countLetters(bwt)
+	ctab := NewCTab(bwt, asize)
+	otab := NewOTab(bwt, asize)
+
+	x := make([]byte, len(bwt))
+	i := 0
+	// We start at len(bwt) - 2 because we already
+	// (implicitly) have the sentinel at len(bwt) - 1
+	// and this way we don't need to start at the index
+	// in bwt that has the sentinel (so we save a search).
+	secondToLast := len(bwt) - 2 //nolint:gomnd // 2 isn't magic now...
+
+	for j := secondToLast; j >= 0; j-- {
+		a := bwt[i]
+		x[j] = a
+		i = ctab.Rank(a) + otab.Rank(a, i)
+	}
+
+	return x
+}
+
+// FMIndexTables contains the preprocessed tables used for FM-index
+// searching
+type FMIndexTables struct {
+	Alpha *Alphabet
+	Sa    []int32
+	Ctab  *CTab
+	Otab  *OTab
+
+	// for approx matching
+	Rotab *OTab
+}
+
+// BuildFMIndexExactTables builds the preprocessing tables for exact FM-index
+// searching.
+func BuildFMIndexExactTables(x string) *FMIndexTables {
+	xb, alpha := MapStringWithSentinel(x)
+	sa, _ := SaisWithAlphabet(x, alpha)
+	bwt := Bwt(xb, sa)
+	ctab := NewCTab(bwt, alpha.Size())
+	otab := NewOTab(bwt, alpha.Size())
+
+	return &FMIndexTables{
+		Alpha: alpha,
+		Sa:    sa,
+		Ctab:  ctab,
+		Otab:  otab,
 	}
 }
 
-var bwtApproxMap = cli.NewCommand(cli.CommandSpec{
-	Name:   "approx",
-	Short:  "approximative mapping",
-	Long:   "Search for approximative matches in genome.",
-	Init:   initBwtApprox,
-	Action: bwtApprox,
-})
+// BuildFMIndexExactTables builds the preprocessing tables for exact FM-index
+// searching.
+func BuildFMIndexApproxTables(x string) *FMIndexTables {
+	tbls := BuildFMIndexExactTables(x)
 
-var bwt = cli.NewMenu(
-	"bwt",
-	"pattern matching using bwt/fm-index",
-	"Search for exact and approximative matches of reads in a genome.",
-	bwtPreprocess, bwtExactMap, bwtApproxMap)
+	// Reverse string x and build the reverse O-table.
+	revx := ReverseString(x)
+	sa, _ := SaisWithAlphabet(revx, tbls.Alpha)
+	revb, _ := tbls.Alpha.MapToBytesWithSentinel(revx)
+	tbls.Rotab = NewOTab(Bwt(revb, sa), tbls.Alpha.Size())
+
+	return tbls
+}
+
+// FMIndexExactFromTables returns a search function based
+// on the preprocessed tables
+func FMIndexExactFromTables(tbls *FMIndexTables) func(p string, cb func(i int)) {
+	return func(p string, cb func(i int)) {
+		pb, err := tbls.Alpha.MapToBytes(p)
+		if err != nil {
+			return // p doesn't fit the alphabet, so we can't match
+		}
+
+		left, right := 0, len(tbls.Sa)
+
+		for i := len(pb) - 1; i >= 0; i-- {
+			a := pb[i]
+			left = tbls.Ctab.Rank(a) + tbls.Otab.Rank(a, left)
+			right = tbls.Ctab.Rank(a) + tbls.Otab.Rank(a, right)
+
+			if left >= right {
+				return // no match
+			}
+		}
+
+		for i := left; i < right; i++ {
+			cb(int(tbls.Sa[i]))
+		}
+	}
+}
+
+// FMIndexExactPreprocess preprocesses the string x and returns a function
+// that you can use to efficiently search in x.
+func FMIndexExactPreprocess(x string) func(p string, cb func(i int)) {
+	return FMIndexExactFromTables(BuildFMIndexExactTables(x))
+}
+
+func buildDtab(p []byte, tbls *FMIndexTables) []int {
+	dtab := make([]int, len(p))
+
+	minEdits := 0
+	left, right := 0, len(tbls.Sa)
+
+	for i := range p {
+		a := p[i]
+		left = tbls.Ctab.Rank(a) + tbls.Rotab.Rank(a, left)
+		right = tbls.Ctab.Rank(a) + tbls.Rotab.Rank(a, right)
+
+		if left >= right {
+			minEdits++
+
+			left, right = 0, len(tbls.Sa)
+		}
+
+		dtab[i] = minEdits
+	}
+
+	return dtab
+}
+
+func withOp(ops *EditOps, op ApproxEdit, fn func()) {
+	*ops = append(*ops, op) // remember operation
+
+	fn() // do computation
+
+	*ops = (*ops)[:len(*ops)-1] // then pop operation
+}
+
+// we need to reverse to ops to make a cigar when we perform
+// the search in reverse
+func revOps(ops *EditOps) EditOps {
+	rev := make(EditOps, len(*ops))
+
+	copy(rev, *ops)
+
+	for i, j := 0, len(rev)-1; i < j; i, j = i+1, j-1 {
+		rev[i], rev[j] = rev[j], rev[i]
+	}
+
+	return rev
+}
+
+func fmApproxReport(left, right int, ops *EditOps, sa *[]int32, cb func(i int, cigar string)) {
+	// Reverse the ops because we build them in reverse, then
+	// convert them into a cigar for reporting
+	cigar := OpsToCigar(revOps(ops))
+	for j := left; j < right; j++ {
+		cb(int((*sa)[j]), cigar)
+	}
+}
+
+// FMIndexApproxFromTables return a search function from the preprocessed tables.
+func FMIndexApproxFromTables(tbls *FMIndexTables) func(p string, edits int, cb func(i int, cigar string)) {
+	return func(p string, edits int, cb func(i int, cigar string)) {
+		pb, err := tbls.Alpha.MapToBytes(p)
+		if err != nil {
+			return // p doesn't fit the alphabet, so we can't match
+		}
+
+		ops := make(EditOps, 0, len(p)+edits) // keep track of operations
+		dtab := buildDtab(pb, tbls)           // D-table for early termination
+
+		// closure for handling the real operations. There is a lot less
+		// wrapping tables in structs or parsing them as parameters
+		// with a closure, even if it might look a bit ugly.
+		var rec func(i, left, right, edits int)
+
+		rec = func(i, left, right, edits int) {
+			if i < 0 {
+				if edits >= 0 {
+					fmApproxReport(left, right, &ops, &tbls.Sa, cb)
+				}
+
+				return
+			}
+
+			if edits < dtab[i] {
+				return // not sufficient edits left
+			}
+
+			for a := byte(1); a < byte(tbls.Alpha.Size()); a++ {
+				nextLeft := tbls.Ctab.Rank(a) + tbls.Otab.Rank(a, left)
+				nextRight := tbls.Ctab.Rank(a) + tbls.Otab.Rank(a, right)
+
+				if nextLeft == nextRight {
+					continue
+				}
+
+				// Do an M operation
+				withOp(&ops, M, func() {
+					if a == pb[i] {
+						rec(i-1, nextLeft, nextRight, edits)
+					} else {
+						rec(i-1, nextLeft, nextRight, edits-1)
+					}
+				})
+
+				// Do a D operation, as long as it is not the first op
+				if len(ops) > 0 {
+					withOp(&ops, D, func() { rec(i, nextLeft, nextRight, edits-1) })
+				}
+			}
+
+			// Do an I operation
+			withOp(&ops, I, func() { rec(i-1, left, right, edits-1) })
+		}
+
+		// finally, fire away with the first recursive call!
+		i, left, right := len(p)-1, 0, len(tbls.Sa)
+		rec(i, left, right, edits)
+	}
+}
+
+// FMIndexApproxPreprocess preprocesses the string x and returns a function
+// that you can use to efficiently search in x.
+func FMIndexApproxPreprocess(x string) func(p string, edits int, cb func(i int, cigar string)) {
+	return FMIndexApproxFromTables(BuildFMIndexApproxTables(x))
+}
+
+// GobEncode implements the encoder interface for serialising to a stream of bytes
+func (otab OTab) GobEncode() (res []byte, err error) {
+	defer catchError(&err)
+
+	var (
+		buf bytes.Buffer
+		enc = gob.NewEncoder(&buf)
+	)
+
+	checkError(enc.Encode(otab.nrow))
+	checkError(enc.Encode(otab.ncol))
+	checkError(enc.Encode(otab.table))
+
+	return buf.Bytes(), nil
+}
+
+// GobDecode implements the decoder interface for serialising to a stream of bytes
+func (otab *OTab) GobDecode(b []byte) (err error) {
+	defer catchError(&err)
+
+	r := bytes.NewReader(b)
+	dec := gob.NewDecoder(r)
+
+	checkError(dec.Decode(&otab.nrow))
+	checkError(dec.Decode(&otab.ncol))
+
+	return dec.Decode(&otab.table)
+}

@@ -4,19 +4,19 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/mailund/gostr"
-	"github.com/mailund/gostr/test"
+	"github.com/mailund/gostr/gostr"
+	"github.com/mailund/gostr/testutils"
 )
 
 func runExactBenchmarkRandom(algo exactAlgo, n int) func(*testing.B) {
 	return func(b *testing.B) {
 		b.Helper()
 		b.StopTimer()
-		rng := test.NewRandomSeed(b)
+		rng := testutils.NewRandomSeed(b)
 
 		for i := 0; i < 5; i++ {
-			x := test.RandomStringN(n, "abcde", rng)
-			p := test.PickRandomSubstring(x, rng)
+			x := testutils.RandomStringN(n, "abcde", rng)
+			p := testutils.PickRandomSubstring(x, rng)
 
 			b.StartTimer()
 			algo(x, p, func(int) {})

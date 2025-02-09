@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/mailund/gostr"
+	"github.com/mailund/gostr/gostr"
 )
 
 func TestAlphabetLookupError(t *testing.T) {

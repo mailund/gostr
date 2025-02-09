@@ -3,6 +3,7 @@ package gostr
 import (
 	"bytes"
 	"encoding/gob"
+	"fmt"
 )
 
 const (
@@ -23,24 +24,28 @@ type Alphabet struct {
 
 // NewAlphabet creates an alphabet consisting of the bytes in ref only.
 func NewAlphabet(ref string) *Alphabet {
-	alpha := Alphabet{}
+	alpha := Alphabet{
+		_map:    [256]byte{},
+		_revmap: [256]byte{},
+		size:    0,
+	}
 
 	alpha._map[0] = 1 // sentinel is always here
 	for i := 0; i < len(ref); i++ {
 		alpha._map[ref[i]] = 1
 	}
 
-	var n byte // tracks alphabet size...
+	var alphaSize byte // tracks alphabet size...
 
 	for a, tag := range alpha._map {
 		if tag == 1 {
-			alpha._map[a] = n
-			alpha._revmap[n] = byte(a)
-			n++
+			alpha._map[a] = alphaSize
+			alpha._revmap[alphaSize] = byte(a)
+			alphaSize++
 		}
 	}
 
-	alpha.size = int(n)
+	alpha.size = int(alphaSize)
 
 	return &alpha
 }
@@ -166,7 +171,7 @@ func MapStringWithSentinel(x string) ([]byte, *Alphabet) {
 }
 
 // GobEncode implements the encoder interface for serialising an alphabet to a stream of bytes
-func (alpha Alphabet) GobEncode() (res []byte, err error) { //nolint:gocritic // Alphabet *has* to be value receiver here
+func (alpha Alphabet) GobEncode() (res []byte, err error) { 
 	defer catchError(&err)
 
 	var (
@@ -178,18 +183,23 @@ func (alpha Alphabet) GobEncode() (res []byte, err error) { //nolint:gocritic //
 	checkError(enc.Encode(alpha._revmap))
 	checkError(enc.Encode(alpha.size))
 
-	return buf.Bytes(), nil
+	res = buf.Bytes()
+
+	return res, nil
 }
 
 // GobDecode implements the encoder interface for serialising an alphabet to a stream of bytes
-func (alpha *Alphabet) GobDecode(b []byte) (err error) {
-	defer catchError(&err)
-
+func (alpha *Alphabet) GobDecode(b []byte) (error) {
+	
 	r := bytes.NewReader(b)
 	dec := gob.NewDecoder(r)
 
 	checkError(dec.Decode(&alpha._map))
 	checkError(dec.Decode(&alpha._revmap))
 
-	return dec.Decode(&alpha.size)
+	if err := dec.Decode(&alpha.size); err != nil {
+		return fmt.Errorf("failed to decode alphabet size: %w", err)
+	} 
+
+	return nil
 }

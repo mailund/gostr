@@ -29,7 +29,8 @@ func checkAlphabetMaps(t *testing.T, x string, letters []byte) {
 	}
 }
 
-func Test_Alphabet_Maps(t *testing.T) {
+func TestAlphabetMaps(t *testing.T) {
+	t.Parallel()
 	checkAlphabetMaps(t, "foo", []byte{'f', 'o'})
 	checkAlphabetMaps(t, "foobar", []byte{'a', 'b', 'f', 'o', 'r'})
 

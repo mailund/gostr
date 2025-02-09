@@ -4,8 +4,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/mailund/gostr"
-	"github.com/mailund/gostr/test"
+	"github.com/mailund/gostr/gostr"
+	"github.com/mailund/gostr/testutils"
 )
 
 type exactFunc = func(x, p string) []int
@@ -101,7 +101,7 @@ func runBasicExactTests(algo exactAlgo) func(*testing.T) {
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
 				hits := exactWrapper(algo)(tt.args.x, tt.args.p)
-				if !test.IntArraysEqual(tt.expected, hits) {
+				if !testutils.IntArraysEqual(tt.expected, hits) {
 					t.Errorf("Searching for %s in %s and found %v (expected %v)\n",
 						tt.args.p, tt.args.x, hits, tt.expected)
 				}
@@ -120,11 +120,11 @@ func runRandomExactOccurencesTests(algo exactAlgo) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
 
-		rng := test.NewRandomSeed(t)
-		test.GenerateTestStringsAndPatterns(100, 200, rng,
+		rng := testutils.NewRandomSeed(t)
+		testutils.GenerateTestStringsAndPatterns(100, 200, rng,
 			func(x, p string) {
 				hits := exactWrapper(algo)(x, p)
-				if !test.CheckAllOccurrences(t, x, p, hits) {
+				if !testutils.CheckAllOccurrences(t, x, p, hits) {
 					t.Fatalf("Incorrect results for x = %q and p = %q", x, p)
 				}
 			})
@@ -142,12 +142,12 @@ func TestRandomExactOccurences(t *testing.T) {
 func runCheckExactOccurencesEqual(expected, algo exactAlgo) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
-		rng := test.NewRandomSeed(t)
-		test.GenerateTestStringsAndPatterns(100, 200, rng,
+		rng := testutils.NewRandomSeed(t)
+		testutils.GenerateTestStringsAndPatterns(100, 200, rng,
 			func(x, p string) {
 				expectedHits := exactWrapper(expected)(x, p)
 				hits := exactWrapper(algo)(x, p)
-				if !test.IntArraysEqual(expectedHits, hits) {
+				if !testutils.IntArraysEqual(expectedHits, hits) {
 					t.Errorf("with x = %s and p = %s:", x, p)
 					t.Fatalf("Expected and actual hits disagree %v vs %v",
 						expectedHits, hits)

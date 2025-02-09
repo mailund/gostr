@@ -6,8 +6,8 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/mailund/gostr"
-	"github.com/mailund/gostr/test"
+	"github.com/mailund/gostr/gostr"
+	"github.com/mailund/gostr/testutils"
 )
 
 func Test_Ctab(t *testing.T) {
@@ -79,7 +79,7 @@ func Test_MississippiBWT(t *testing.T) {
 
 	preproc := gostr.FMIndexExactPreprocess(xs)
 	preproc(ps, func(i int) {
-		test.CheckOccurrenceAt(t, xs, ps, i)
+		testutils.CheckOccurrenceAt(t, xs, ps, i)
 	})
 }
 
@@ -89,7 +89,7 @@ func Test_MississippiBWTApprox0(t *testing.T) {
 
 	preproc := gostr.FMIndexApproxPreprocess(xs)
 	preproc(ps, 0, func(i int, _ string) {
-		test.CheckOccurrenceAt(t, xs, ps, i)
+		testutils.CheckOccurrenceAt(t, xs, ps, i)
 	})
 }
 

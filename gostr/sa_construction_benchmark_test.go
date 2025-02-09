@@ -3,16 +3,16 @@ package gostr_test
 import (
 	"testing"
 
-	"github.com/mailund/gostr"
-	"github.com/mailund/gostr/test"
+	"github.com/mailund/gostr/gostr"
+	"github.com/mailund/gostr/testutils"
 )
 
 func benchmarkSAconstruction(b *testing.B, constr func(string) []int32, n int) {
 	b.Helper()
 
-	rng := test.NewRandomSeed(b)
+	rng := testutils.NewRandomSeed(b)
 	for i := 0; i < b.N; i++ {
-		x := test.RandomStringN(n, "abcdefg", rng)
+		x := testutils.RandomStringN(n, "abcdefg", rng)
 		constr(x)
 	}
 }

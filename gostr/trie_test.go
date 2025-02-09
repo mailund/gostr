@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mailund/gostr"
+	"github.com/mailund/gostr/gostr"
 )
 
 func TestTrie_Contains(t *testing.T) {
