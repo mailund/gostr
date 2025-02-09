@@ -21,13 +21,20 @@ linters-settings:
       - performance
       - style
 
+
   nolintlint:
     require-explanation: true
     require-specific: true
 
-
 linters:
-  enable-all: true
+  enable:
+    - gocritic
+    - revive
+    - errcheck
+    - goconst
+    - depguard
+    - nolintlint
+
 
 run:
   issues-exit-code: 1

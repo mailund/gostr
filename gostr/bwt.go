@@ -329,7 +329,7 @@ func FMIndexApproxFromTables(tbls *FMIndexTables) func(p string, edits int, cb f
 				}
 
 				// Do an M operation
-				withOp(&ops, M, func() {
+				withOp(&ops, Match, func() {
 					if a == pb[i] {
 						rec(i-1, nextLeft, nextRight, edits)
 					} else {
@@ -339,12 +339,12 @@ func FMIndexApproxFromTables(tbls *FMIndexTables) func(p string, edits int, cb f
 
 				// Do a D operation, as long as it is not the first op
 				if len(ops) > 0 {
-					withOp(&ops, D, func() { rec(i, nextLeft, nextRight, edits-1) })
+					withOp(&ops, Delete, func() { rec(i, nextLeft, nextRight, edits-1) })
 				}
 			}
 
 			// Do an I operation
-			withOp(&ops, I, func() { rec(i-1, left, right, edits-1) })
+			withOp(&ops, Insert, func() { rec(i-1, left, right, edits-1) })
 		}
 
 		// finally, fire away with the first recursive call!

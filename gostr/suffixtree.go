@@ -230,7 +230,7 @@ func (st *SuffixTree) Search(p string, visitor func(int)) {
 
 // This function doesn't really belong with suffix trees,
 // but this is where I need it...
-func min(vars ...int) int {
+func smallest(vars ...int) int {
 	m := vars[0]
 	for _, n := range vars {
 		if n < m {
@@ -242,7 +242,7 @@ func min(vars ...int) int {
 }
 
 func lenSharedPrefix(x, y []byte) int {
-	i, n := 0, min(len(x), len(y))
+	i, n := 0, smallest(len(x), len(y))
 	for ; i < n; i++ {
 		if x[i] != y[i] {
 			break
@@ -304,7 +304,7 @@ func fscan(n STNode, y []byte) (node STNode, depth int, search []byte) {
 		// If we scan on a node, it is an inner node
 		v := n.Inner().Children[y[0]]
 
-		i := min(len(v.Shared().EdgeLabel), len(y))
+		i := smallest(len(v.Shared().EdgeLabel), len(y))
 		if i == len(y) {
 			return v, i, y
 		}

@@ -25,6 +25,8 @@ func TestTrie_Contains(t *testing.T) {
 }
 
 func TestTrieToDot(t *testing.T) {
+	t.Parallel()
+	
 	input := []string{"foo", "foobar", "bar", "baz"}
 	trie := gostr.BuildTrie(input)
 

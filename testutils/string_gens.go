@@ -28,8 +28,8 @@ func RandomStringN(n int, alpha string, rng *rand.Rand) string {
 }
 
 // RandomStringRange constructs a random string of length in [min, max), over the alphabet alpha.
-func RandomStringRange(min, max int, alpha string, rng *rand.Rand) string {
-	n := min + rng.Intn(max-min)
+func RandomStringRange(minimum, maximum int, alpha string, rng *rand.Rand) string {
+	n := minimum + rng.Intn(maximum-minimum)
 	return RandomStringN(n, alpha, rng)
 }
 
@@ -88,37 +88,37 @@ func PickRandomSubstring(x string, rng *rand.Rand) string {
 // GenerateRandomTestStrings generates strings of length between
 // min and max and calls callback with them.
 func GenerateRandomTestStrings(
-	min, max int,
+	minimum, maximum int,
 	rng *rand.Rand,
 	callback func(x string)) {
 	n := 50 // number of random strings (maybe parameterise)
 	for i := 0; i < n; i++ {
-		callback(RandomStringRange(min, max, "abcdefg", rng))
+		callback(RandomStringRange(minimum, maximum, "abcdefg", rng))
 	}
 }
 
 // GenerateSingletonTestStrings generate singeton strings with length
 // between min and max
 func GenerateSingletonTestStrings(
-	min, max int,
+	minimum, maximum int,
 	rng *rand.Rand,
 	callback func(x string)) {
 	n := 50 // number of random strings (maybe parameterise)
 	for i := 0; i < n; i++ {
 		// maybe it is a little overkill to generate this many
 		// singletons?
-		callback(SingletonString(min+rng.Intn(max-min), 'a'))
+		callback(SingletonString(minimum+rng.Intn(maximum-minimum), 'a'))
 	}
 }
 
 // GenerateTestStrings generates strings of length between min
 // and max and calls callback with them.
 func GenerateTestStrings(
-	min, max int,
+	minimum, maximum int,
 	rng *rand.Rand,
 	callback func(x string)) {
-	GenerateRandomTestStrings(min, max, rng, callback)
-	GenerateSingletonTestStrings(min, max, rng, callback)
+	GenerateRandomTestStrings(minimum, maximum, rng, callback)
+	GenerateSingletonTestStrings(minimum, maximum, rng, callback)
 
 	for n := 0; n < 10; n++ {
 		callback(FibonacciString(n))
@@ -127,8 +127,8 @@ func GenerateTestStrings(
 
 // GenerateTestStringsAndPatterns generates a set of strings (x, p) where x is a string
 // to search in and p is a string to search for.
-func GenerateTestStringsAndPatterns(min, max int, rng *rand.Rand, callback func(x, p string)) {
-	GenerateRandomTestStrings(min, max, rng,
+func GenerateTestStringsAndPatterns(minimum, maximum int, rng *rand.Rand, callback func(x, p string)) {
+	GenerateRandomTestStrings(minimum, maximum, rng,
 		func(x string) {
 			for j := 0; j < 10; j++ {
 				// random patterns, they might have a character that
@@ -148,7 +148,7 @@ func GenerateTestStringsAndPatterns(min, max int, rng *rand.Rand, callback func(
 				callback(x, PickRandomSubstring(x, rng))
 			}
 		})
-	GenerateSingletonTestStrings(min, max, rng,
+	GenerateSingletonTestStrings(minimum, maximum, rng,
 		func(x string) {
 			for j := 0; j < 10; j++ {
 				// random patterns, they might have a character that

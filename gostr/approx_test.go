@@ -23,23 +23,23 @@ func TestOpsToCigar(t *testing.T) {
 	}{
 		{
 			"Single M",
-			args{ops: []gostr.ApproxEdit{gostr.M}},
+			args{ops: []gostr.ApproxEdit{gostr.Match}},
 			"1M",
 		},
 		{
 			"Single D",
-			args{ops: []gostr.ApproxEdit{gostr.D}},
+			args{ops: []gostr.ApproxEdit{gostr.Delete}},
 			"1D",
 		},
 		{
 			"Single I",
-			args{ops: []gostr.ApproxEdit{gostr.I}},
+			args{ops: []gostr.ApproxEdit{gostr.Insert}},
 			"1I",
 		},
 		{
 			"IIMMMDDI",
 			args{ops: []gostr.ApproxEdit{
-				gostr.I, gostr.I, gostr.M, gostr.M, gostr.M, gostr.D, gostr.D, gostr.I}},
+				gostr.Insert, gostr.Insert, gostr.Match, gostr.Match, gostr.Match, gostr.Delete, gostr.Delete, gostr.Insert}},
 			"2I3M2D1I",
 		},
 	}
@@ -64,30 +64,30 @@ func TestCigarToOps(t *testing.T) {
 	}{
 		{
 			"1M",
-			gostr.EditOps{gostr.M},
+			gostr.EditOps{gostr.Match},
 			nil,
 		},
 		{
 			"10M",
-			gostr.EditOps{gostr.M, gostr.M, gostr.M, 
-				gostr.M, gostr.M, gostr.M, gostr.M, 
-				gostr.M, gostr.M, gostr.M},
+			gostr.EditOps{gostr.Match, gostr.Match, gostr.Match, 
+				gostr.Match, gostr.Match, gostr.Match, gostr.Match, 
+				gostr.Match, gostr.Match, gostr.Match},
 			nil,
 		},
 		{
 			"1I",
-			gostr.EditOps{gostr.I},
+			gostr.EditOps{gostr.Insert},
 			nil,
 		},
 		{
 			"1D",
-			gostr.EditOps{gostr.D},
+			gostr.EditOps{gostr.Delete},
 			nil,
 		},
 		{
 			"1D2M3I",
-			gostr.EditOps{gostr.D, gostr.M, gostr.M, gostr.I, 
-				gostr.I, gostr.I},
+			gostr.EditOps{gostr.Delete, gostr.Match, gostr.Match, gostr.Insert, 
+				gostr.Insert, gostr.Insert},
 			nil,
 		},
 		{

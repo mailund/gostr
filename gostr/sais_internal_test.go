@@ -48,8 +48,10 @@ func Test_newBitArray(t *testing.T) {
 }
 
 // These are tested through the newBitArray test for now...
+/* Not currently used
 func Test_bitArray_get(t *testing.T) {}
 func Test_bitArray_set(t *testing.T) {}
+*/
 
 func Test_classifyST(t *testing.T) {
 	type args struct {
@@ -197,6 +199,8 @@ func Test_recSAIS(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			
 			isS := newBitArray(len(tt.args.x))
 			recSais(tt.args.x, tt.args.SA, tt.args.asize, isS)
 		})

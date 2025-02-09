@@ -92,7 +92,7 @@ func testSearchMatch(t *testing.T, algo string, st *gostr.SuffixTree, p string) 
 func testSearchMismatch(t *testing.T, algo string, st *gostr.SuffixTree, p string) {
 	t.Helper()
 
-	st.Search(p, func(i int) {
+	st.Search(p, func(int) {
 		t.Errorf(`We shouldn't find "%s" in %s("%s").`,
 			p, algo, st.Alpha.RevmapBytes(st.String))
 	})

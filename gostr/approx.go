@@ -15,17 +15,17 @@ type EditOps = []ApproxEdit
 
 // Approximative matching edit operations.
 const (
-	M ApproxEdit = iota // Match/mismatch operations
-	I            = iota // Insertion operations
-	D            = iota // Deletion operations
+	Match ApproxEdit  = iota // Match/mismatch operations
+	Insert            = iota // Insertion operations
+	Delete            = iota // Deletion operations
 )
 
-var editsToString = map[ApproxEdit]string{
-	M: "M", I: "I", D: "D",
+var editsToString = map[ApproxEdit]string{ //nolint:gochecknoglobals // a constant map
+	Match: "M", Insert: "I", Delete: "D",
 }
 
-var stringToEdits = map[string]ApproxEdit{
-	"M": M, "I": I, "D": D,
+var stringToEdits = map[string]ApproxEdit{ //nolint:gochecknoglobals // a constant map
+	"M": Match, "I": Insert, "D": Delete,
 }
 
 // OpsToCigar turns a list of ops into a cigar.
@@ -36,7 +36,10 @@ func OpsToCigar(ops EditOps) string {
 	)
 
 	for ; i < len(ops); i = j {
-		for j = i + 1; j < len(ops) && ops[i] == ops[j]; j++ {
+		for j = i + 1; j < len(ops) ; j++ { 
+			if ops[j] != ops[i] {
+				break
+			}
 		}
 
 		res = append(res, fmt.Sprintf("%d%s", j-i, editsToString[ops[i]]))
@@ -84,18 +87,18 @@ func ExtractAlignment(x, p string, pos int, cigar string) (subx, subp string, er
 
 	for _, op := range ops {
 		switch op {
-		case M:
+		case Match:
 			subx += string(x[i])
 			subp += string(p[j])
 			i++
 			j++
 
-		case I:
+		case Insert:
 			subx += "-"
 			subp += string(p[j])
 			j++
 
-		case D:
+		case Delete:
 			subx += string(x[i])
 			subp += "-"
 			i++

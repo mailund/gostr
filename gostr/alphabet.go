@@ -31,7 +31,7 @@ func NewAlphabet(ref string) *Alphabet {
 	}
 
 	alpha._map[0] = 1 // sentinel is always here
-	for i := 0; i < len(ref); i++ {
+	for i := range ref {
 		alpha._map[ref[i]] = 1
 	}
 
@@ -171,7 +171,7 @@ func MapStringWithSentinel(x string) ([]byte, *Alphabet) {
 }
 
 // GobEncode implements the encoder interface for serialising an alphabet to a stream of bytes
-func (alpha Alphabet) GobEncode() (res []byte, err error) { 
+func (alpha Alphabet) GobEncode() (res []byte, err error) { //nolint:gocritic // Need to pass Alphabet for GobEncode
 	defer catchError(&err)
 
 	var (
