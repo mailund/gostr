@@ -10,7 +10,7 @@ import (
 )
 
 func TestOpsToCigar(t *testing.T) {
-	// t.Parallel()
+	t.Parallel()
 
 	type args struct {
 		ops gostr.EditOps
@@ -46,7 +46,7 @@ func TestOpsToCigar(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 			if got := gostr.OpsToCigar(tt.args.ops); got != tt.want {
 				t.Errorf("OpsToCigar() = %v, want %v", got, tt.want)
 			}
@@ -266,11 +266,11 @@ func runRandomApproxOccurencesTests(algo approxAlgo) func(*testing.T) {
 
 func TestRandomApproxOccurences(t *testing.T) {
 	t.Helper()
-	// t.Parallel()
+	t.Parallel()
 
 	for name, algo := range approxAlgorithms {
 		t.Run(name, func(t *testing.T) {
-			// t.Parallel()
+			t.Parallel()
 			runRandomApproxOccurencesTests(algo)(t)
 		})
 		
