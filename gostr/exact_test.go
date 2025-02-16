@@ -8,8 +8,8 @@ import (
 	"github.com/mailund/gostr/testutils"
 )
 
-type exactFunc = func(x, p string) []int
 type exactAlgo = func(x, p string, cb func(int))
+type exactFunc = func(x, p string) []int
 
 func exactWrapper(algo exactAlgo) exactFunc {
 	return func(x, p string) []int {

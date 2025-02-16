@@ -19,15 +19,12 @@ func reportEmptyMatches(x string, fn func(int)) {
 //   - p: the string we search for
 //   - callback: a function called for each occurrence
 func Naive(x, p string, callback func(int)) {
-	var i, j int
-	for i = 0; i < len(x)-len(p)+1; i++ {
-		for j = 0; j < len(p); j++ {
-			if x[i+j] != p[j] {
-				break
-			}
-		}
-
-		if j == len(p) {
+	n, m := len(x), len(p)
+	if n == 0 || m == 0 {
+		return
+	}
+	for i := 0; i < n-m+1; i++ {
+		if x[i : i+m] == p {
 			callback(i)
 		}
 	}
